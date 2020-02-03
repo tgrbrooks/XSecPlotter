@@ -43,7 +43,8 @@ class Configuration
   bool show_info;
   bool show_stat_error;
   bool show_syst_error;
-  double detector_syst;
+  std::vector<TString> systematics;
+  double constant_syst;
   bool show_error_bars;
   bool plot_correlation;
   bool plot_eff_pur;
@@ -179,7 +180,8 @@ class Configuration
       if(key.find("ShowInfo") != std::string::npos)        show_info = (value=="true");
       if(key.find("ShowStatError") != std::string::npos)   show_stat_error = (value=="true");
       if(key.find("ShowSystError") != std::string::npos)   show_syst_error = (value=="true");
-      if(key.find("DetectorSyst") != std::string::npos)    detector_syst = stod(value);
+      if(key.find("Systematics") != std::string::npos)     systematics = ToTStrings(value);
+      if(key.find("ConstantSyst") != std::string::npos)    constant_syst = stod(value);
       if(key.find("ShowErrorBars") != std::string::npos)   show_error_bars = (value=="true");
       if(key.find("PlotCorrelation") != std::string::npos) plot_correlation = (value=="true");
       if(key.find("PlotEffPur") != std::string::npos)      plot_eff_pur = (value=="true");

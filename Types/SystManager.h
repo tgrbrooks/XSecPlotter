@@ -4,6 +4,7 @@
 #include "Configuration.h"
 #include "PlotManager.h"
 
+
 // Structure for holding interaction information
 class SystManager
 {
@@ -16,6 +17,7 @@ class SystManager
   {
     config = c;
     plotman = p;
+
   }
 
   double BkgSubtractionError(double mid, double width, TH1D* bkg){
@@ -71,7 +73,7 @@ class SystManager
 
   }
 
-  TH1D* GetDetSystHist(TString name, std::vector<std::vector<double>> bin_edges, int tune_i, int i, int j = -1, int bin_j = -1, int k = -1, int bin_k = -1){
+  TH1D* GetDetSystHist(TString name, std::vector<std::vector<double>> bin_edges, int tune_i, int i, int j = -1, int bin_j = -1){
 
     int nsims = 50;
 
@@ -125,7 +127,6 @@ class SystManager
     if(config->plot_xsec){
       double width = 1;
       if(j != -1) width = width * (bin_edges[j][bin_j+1] - bin_edges[j][bin_j]);
-      if(k != -1) width = width * (bin_edges[k][bin_k+1] - bin_edges[k][bin_k]);
       double xsec_scale = 1e38/(width * config->flux[tune_i] * config->targets);
       for(size_t ns = 0; ns < nsims; ns++){
         syst_hists[ns]->Scale(xsec_scale, "width");
@@ -158,7 +159,7 @@ class SystManager
 
 
   // Get the total (unstacked) histogram
-  TH1D* GetSystHist(const std::vector<std::vector<double>> &data, const std::vector<bool> &used, TString name, std::vector<std::vector<double>> bin_edges, int tune_i, int i, int j = -1, int bin_j = -1, int k = -1, int bin_k = -1){
+  TH1D* GetSystHist(const std::vector<std::vector<double>> &data, const std::vector<bool> &used, TString name, std::vector<std::vector<double>> bin_edges, int tune_i, int i, int j = -1, int bin_j = -1){
       
     int nsims = 100;
 
@@ -185,7 +186,7 @@ class SystManager
     int data_i = 0;
     while (tree_reader.Next()) {
       if(!used[index]){ index++; continue; }
-      if(j == -1 && k == -1){
+      if(j == -1){
         for(size_t ns = 0; ns < nsims; ns++){
           //double weight = genie_weight[ns]*flux_weight[ns];
           double weight = genie_weight[ns];
@@ -194,20 +195,13 @@ class SystManager
           syst_hists[ns]->Fill(data[data_i][i], weight);
         }
       }
-      /*else if(data[data_i][j] >= bin_edges[j][bin_j] && data[data_i][j] < bin_edges[j][bin_j+1]){
-        if(k == -1){
-          for(size_t ns = 0; ns < nsims; ns++){
-            if(weight[ns] < 0 || weight[ns] > 100) continue;
-            syst_hists[ns]->Fill(data[data_i][i], weight[ns]);
-          }
+      else if(data[data_i][j] >= bin_edges[j][bin_j] && data[data_i][j] < bin_edges[j][bin_j+1]){
+        for(size_t ns = 0; ns < nsims; ns++){
+          double weight = genie_weight[ns];
+          if(weight < 0 || weight > 100) continue;
+          syst_hists[ns]->Fill(data[data_i][i], weight);
         }
-        else if(data[data_i][k] >= bin_edges[k][bin_k] && data[data_i][k] < bin_edges[k][bin_k+1]){
-          for(size_t ns = 0; ns < nsims; ns++){
-            if(weight[ns] < 0 || weight[ns] > 100) continue;
-            syst_hists[ns]->Fill(data[data_i][i], weight[ns]);
-          }
-        }
-      }*/
+      }
       index++;
       data_i++;
     }
@@ -221,7 +215,6 @@ class SystManager
     if(config->plot_xsec){
       double width = 1;
       if(j != -1) width = width * (bin_edges[j][bin_j+1] - bin_edges[j][bin_j]);
-      if(k != -1) width = width * (bin_edges[k][bin_k+1] - bin_edges[k][bin_k]);
       double xsec_scale = 1e38/(width * config->flux[tune_i] * config->targets);
       for(size_t ns = 0; ns < nsims; ns++){
         syst_hists[ns]->Scale(xsec_scale, "width");

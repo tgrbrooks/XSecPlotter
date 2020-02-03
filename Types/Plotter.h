@@ -1,21 +1,24 @@
-#ifndef PLOTMANAGER_H
-#define PLOTMANAGER_H
+#ifndef PLOTTER_H
+#define PLOTTER_H
 
 #include "Configuration.h"
 #include "Titles.h"
 #include "Interaction.h"
+#include "Systematics.h"
+#include "Histo1D.h"
+#include "Histo2D.h"
 
 // Structure for holding interaction information
-class PlotManager
+class Plotter
 {
   public:
 
   Configuration *config;
   Titles *titles;
 
-  PlotManager(){}
+  Plotter(){}
 
-  PlotManager(Configuration *c, Titles *t)
+  Plotter(Configuration *c, Titles *t)
   {
     config = c;
     titles = t;
@@ -66,10 +69,10 @@ class PlotManager
   }
 
   // Plot a 1D stacked hist with statistical errors on the bottom
-  void Plot1DWithErrors(THStack* hstack, TLegend* legend, TH1D* error_bands, TH1D* total_hist, TH1D* syst_hist, size_t i, size_t j = -1){
+  void Plot1DWithErrors(Histo1D* histo, size_t var_i){
 
     // Create the canvas
-    TString name = hstack->GetName();
+    TString name = histo->stacked_hist->GetName();
     TCanvas *canvas = new TCanvas("canvas"+name,"canvas");
 
     // Split the pad for histogram and error plot
@@ -93,68 +96,71 @@ class PlotManager
     upper_pad->cd();
 
     // Draw the stacked histogram and legend
-    hstack->Draw("HIST");
+    histo->stacked_hist->Draw("HIST");
     if(config->show_error_bars){
-      for(size_t n = 0; n <= syst_hist->GetNbinsX(); n++){
-        syst_hist->SetBinError(n, std::sqrt(std::pow(syst_hist->GetBinError(n), 2)
-                                            +std::pow(config->constant_syst*total_hist->GetBinContent(n)/100., 2)));
+      TH1D* error_hist = (TH1D*)histo->total_hist->Clone();
+      if(config->show_syst_error){
+        for(size_t n = 0; n <= histo->systematics->total->GetNbinsX(); n++){
+          error_hist->SetBinError(n, std::sqrt(std::pow(histo->systematics->total->GetBinError(n), 2)
+                                            +std::pow(error_hist->GetBinError(n), 2)));
+        }
       }
-      syst_hist->SetLineWidth(0);
-      syst_hist->SetMarkerStyle(0);
-      syst_hist->SetFillColor(15);
-      syst_hist->SetFillStyle(3001);
-      if(config->show_syst_error) syst_hist->Draw("E2 SAME");
-      total_hist->SetLineWidth(0);
-      total_hist->SetMarkerStyle(0);
-      total_hist->SetFillColor(12);
-      total_hist->SetFillStyle(3001);
-      total_hist->Draw("E2 SAME");
+      error_hist->SetLineWidth(0);
+      error_hist->SetMarkerStyle(0);
+      error_hist->SetFillColor(15);
+      error_hist->SetFillStyle(3001);
+      if(config->show_syst_error) error_hist->Draw("E2 SAME");
+      histo->total_hist->SetLineWidth(0);
+      histo->total_hist->SetMarkerStyle(0);
+      histo->total_hist->SetFillColor(12);
+      histo->total_hist->SetFillStyle(3001);
+      histo->total_hist->Draw("E2 SAME");
     }
 
     if(config->plot_stacked){
-      legend->SetNColumns(legend->GetNRows());
-      legend->SetFillStyle(0);
-      legend->Draw();
+      histo->legend->SetNColumns(histo->legend->GetNRows());
+      histo->legend->SetFillStyle(0);
+      histo->legend->Draw();
     }
     // Set the titles
     if(config->plot_xsec){
-      hstack->GetYaxis()->SetTitle(titles->GetXSecTitle(i, j));
+      histo->stacked_hist->GetYaxis()->SetTitle(titles->GetXSecTitle(var_i));
     }
     else if(config->max_error > 0){
-      hstack->GetYaxis()->SetTitle("Events (/bin width)");
+      histo->stacked_hist->GetYaxis()->SetTitle("Events (/bin width)");
     }
     else{
-      hstack->GetYaxis()->SetTitle("Events");
+      histo->stacked_hist->GetYaxis()->SetTitle("Events");
     }
     // X axis config
-    hstack->GetXaxis()->SetLabelOffset(0.1);
-    hstack->GetXaxis()->SetTitleOffset(1.8);
-    hstack->GetXaxis()->SetTickLength(0.04);
+    histo->stacked_hist->GetXaxis()->SetLabelOffset(0.1);
+    histo->stacked_hist->GetXaxis()->SetTitleOffset(1.8);
+    histo->stacked_hist->GetXaxis()->SetTickLength(0.04);
     // Y axis config
-    hstack->GetYaxis()->SetTitleOffset(0.8);
-    double title_size = 1.1*hstack->GetYaxis()->GetTitleSize();
+    histo->stacked_hist->GetYaxis()->SetTitleOffset(0.8);
+    double title_size = 1.1*histo->stacked_hist->GetYaxis()->GetTitleSize();
     if(config->plot_xsec && config->plot_variables.size()==1){ 
-      title_size = 1.0*hstack->GetYaxis()->GetTitleSize();
-      hstack->GetYaxis()->SetTitleOffset(0.9);
+      title_size = 1.0*histo->stacked_hist->GetYaxis()->GetTitleSize();
+      histo->stacked_hist->GetYaxis()->SetTitleOffset(0.9);
     }
     if(config->plot_xsec && config->plot_variables.size()==2){ 
-      title_size = 0.8*hstack->GetYaxis()->GetTitleSize();
-      hstack->GetYaxis()->SetTitleOffset(1.0);
+      title_size = 0.8*histo->stacked_hist->GetYaxis()->GetTitleSize();
+      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.0);
     }
     if(config->plot_xsec && config->plot_variables.size()==3){ 
-      title_size = 0.6*hstack->GetYaxis()->GetTitleSize();
-      hstack->GetYaxis()->SetTitleOffset(1.1);
+      title_size = 0.6*histo->stacked_hist->GetYaxis()->GetTitleSize();
+      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.1);
     }
-    hstack->GetYaxis()->SetTitleSize(title_size);
-    hstack->GetYaxis()->SetNdivisions(110);
-    hstack->GetYaxis()->SetTickLength(0.015);
+    histo->stacked_hist->GetYaxis()->SetTitleSize(title_size);
+    histo->stacked_hist->GetYaxis()->SetNdivisions(110);
+    histo->stacked_hist->GetYaxis()->SetTickLength(0.015);
     canvas->Modified();
 
     // Info text
     // Text position and content
-    double width = 0.7*(hstack->GetXaxis()->GetXmax()-hstack->GetXaxis()->GetXmin())+hstack->GetXaxis()->GetXmin();
-    double height = hstack->GetMaximum();
-    double upper_text_size = 0.7*hstack->GetYaxis()->GetTitleSize();
+    double width = 0.7*(histo->stacked_hist->GetXaxis()->GetXmax()-histo->stacked_hist->GetXaxis()->GetXmin())+histo->stacked_hist->GetXaxis()->GetXmin();
+    double height = histo->stacked_hist->GetMaximum();
+    double upper_text_size = 0.7*histo->stacked_hist->GetYaxis()->GetTitleSize();
     if(config->show_info) DrawInfo(width, height, upper_text_size);
    
     // Fill the lower pad with percentage error per bin
@@ -163,29 +169,29 @@ class PlotManager
     lower_pad->SetTicky();
    
     // Set axis titles
-    error_bands->SetFillColor(38);
-    error_bands->SetLineColor(38);
-    error_bands->GetYaxis()->SetTitle("#sigma_{stat} (%)");
-    error_bands->GetXaxis()->SetTitle(titles->names[i]+" ["+titles->units[i]+"]");
+    histo->error_band->SetFillColor(38);
+    histo->error_band->SetLineColor(38);
+    histo->error_band->GetYaxis()->SetTitle("#sigma_{stat} (%)");
+    histo->error_band->GetXaxis()->SetTitle(titles->names[var_i]+" ["+titles->units[var_i]+"]");
 
     double size_ratio = upper_pad->GetAbsHNDC()/lower_pad->GetAbsHNDC();
     // x axis config
-    error_bands->GetXaxis()->SetTitleSize(1.1*size_ratio*error_bands->GetXaxis()->GetTitleSize());
-    error_bands->GetXaxis()->SetLabelSize(size_ratio*error_bands->GetXaxis()->GetLabelSize());
-    error_bands->GetXaxis()->SetLabelOffset(0.04);
-    error_bands->GetXaxis()->SetTickLength(size_ratio*0.04);
-    error_bands->SetTitleOffset(1.0, "x");
+    histo->error_band->GetXaxis()->SetTitleSize(1.1*size_ratio*histo->error_band->GetXaxis()->GetTitleSize());
+    histo->error_band->GetXaxis()->SetLabelSize(size_ratio*histo->error_band->GetXaxis()->GetLabelSize());
+    histo->error_band->GetXaxis()->SetLabelOffset(0.04);
+    histo->error_band->GetXaxis()->SetTickLength(size_ratio*0.04);
+    histo->error_band->SetTitleOffset(1.0, "x");
     // y axis config
-    error_bands->GetYaxis()->SetTitleSize(1.1*size_ratio*error_bands->GetYaxis()->GetTitleSize());
-    error_bands->GetYaxis()->SetLabelSize(size_ratio*error_bands->GetYaxis()->GetLabelSize());
-    error_bands->GetYaxis()->CenterTitle();
-    error_bands->GetYaxis()->SetTickLength(0.015);
-    error_bands->SetNdivisions(105, "y");
-    error_bands->SetTitleOffset(0.3, "y");
+    histo->error_band->GetYaxis()->SetTitleSize(1.1*size_ratio*histo->error_band->GetYaxis()->GetTitleSize());
+    histo->error_band->GetYaxis()->SetLabelSize(size_ratio*histo->error_band->GetYaxis()->GetLabelSize());
+    histo->error_band->GetYaxis()->CenterTitle();
+    histo->error_band->GetYaxis()->SetTickLength(0.015);
+    histo->error_band->SetNdivisions(105, "y");
+    histo->error_band->SetTitleOffset(0.3, "y");
 
     // Draw the error bars
-    if(error_bands->GetNbinsX() < 40) error_bands->Draw("B");
-    else error_bands->Draw("C");
+    if(histo->error_band->GetNbinsX() < 40) histo->error_band->Draw("B");
+    else histo->error_band->Draw("C");
     
     TString output_file = config->output_file;
     output_file.ReplaceAll(".","_"+name+".");
@@ -193,10 +199,10 @@ class PlotManager
   }
 
   // Plot a 1D stacked hist
-  void Plot1D(THStack* hstack, TLegend* legend, TH1D* total_hist, TH1D* syst_hist, size_t i, size_t j = -1){
+  void Plot1D(Histo1D* histo, size_t var_i){
 
     // Create the canvas
-    TString name = hstack->GetName();
+    TString name = histo->stacked_hist->GetName();
     TCanvas *canvas = new TCanvas("canvas"+name,"canvas");
 
     // Split the pad for histogram and error plot
@@ -206,79 +212,82 @@ class PlotManager
     canvas->SetRightMargin(0.04);
 
     // Draw the stacked histogram and legend
-    hstack->Draw("HIST");
+    histo->stacked_hist->Draw("HIST");
 
+    TH1D* error_hist = (TH1D*)histo->total_hist->Clone();
     if(config->show_error_bars){
-      for(size_t n = 0; n <= syst_hist->GetNbinsX(); n++){
-        syst_hist->SetBinError(n, std::sqrt(std::pow(syst_hist->GetBinError(n), 2)
-                                            +std::pow(config->constant_syst*total_hist->GetBinContent(n)/100., 2)));
+      if(config->show_syst_error){
+        for(size_t n = 0; n <= error_hist->GetNbinsX(); n++){
+          error_hist->SetBinError(n, std::sqrt(std::pow(histo->systematics->total->GetBinError(n), 2)
+                                            +std::pow(error_hist->GetBinError(n), 2)));
+        }
       }
-      syst_hist->SetLineWidth(0);
-      syst_hist->SetMarkerStyle(0);
-      syst_hist->SetFillColor(15);
-      syst_hist->SetFillStyle(3001);
-      if(config->show_syst_error) syst_hist->Draw("E2 SAME");
-      total_hist->SetLineWidth(0);
-      total_hist->SetMarkerStyle(0);
-      total_hist->SetFillColor(12);
-      total_hist->SetFillStyle(3001);
-      total_hist->Draw("E2 SAME");
+      error_hist->SetLineWidth(0);
+      error_hist->SetMarkerStyle(0);
+      error_hist->SetFillColor(15);
+      error_hist->SetFillStyle(3001);
+      if(config->show_syst_error) error_hist->Draw("E2 SAME");
+      histo->total_hist->SetLineWidth(0);
+      histo->total_hist->SetMarkerStyle(0);
+      histo->total_hist->SetFillColor(12);
+      histo->total_hist->SetFillStyle(3001);
+      histo->total_hist->Draw("E2 SAME");
     }
 
     if(config->plot_stacked){
-      legend->SetNColumns(legend->GetNRows());
-      legend->SetFillStyle(0);
-      legend->Draw();
+      histo->legend->SetNColumns(histo->legend->GetNRows());
+      histo->legend->SetFillStyle(0);
+      histo->legend->Draw();
       canvas->Update();
-      legend->SetX1NDC(0.24);
-      legend->SetY1NDC(0.85);
-      legend->SetX2NDC(0.96);
-      legend->SetY2NDC(0.91);
+      histo->legend->SetX1NDC(0.24);
+      histo->legend->SetY1NDC(0.85);
+      histo->legend->SetX2NDC(0.96);
+      histo->legend->SetY2NDC(0.91);
       canvas->Modified();
     }
     // Set the titles
     if(config->plot_xsec){
-      hstack->GetYaxis()->SetTitle(titles->GetXSecTitle(i, j));
+      histo->stacked_hist->GetYaxis()->SetTitle(titles->GetXSecTitle(var_i));
     }
     else if(config->max_error > 0){
-      hstack->GetYaxis()->SetTitle("Events (/Bin width)");
+      histo->stacked_hist->GetYaxis()->SetTitle("Events (/Bin width)");
     }
     else{
-      hstack->GetYaxis()->SetTitle("Events");
+      histo->stacked_hist->GetYaxis()->SetTitle("Events");
     }
-    hstack->GetXaxis()->SetTitle(titles->names[i]+" ["+titles->units[i]+"]");
+    histo->stacked_hist->GetXaxis()->SetTitle(titles->names[var_i]+" ["+titles->units[var_i]+"]");
     // X axis config
-    hstack->GetXaxis()->SetTitleOffset(1.);
-    hstack->GetXaxis()->SetTickLength(0.02);
-    hstack->GetXaxis()->SetTitleSize(1.1*hstack->GetXaxis()->GetTitleSize());
+    histo->stacked_hist->GetXaxis()->SetTitleOffset(1.);
+    histo->stacked_hist->GetXaxis()->SetTickLength(0.02);
+    histo->stacked_hist->GetXaxis()->SetTitleSize(1.1*histo->stacked_hist->GetXaxis()->GetTitleSize());
     // Y axis config
-    hstack->GetYaxis()->SetTitleOffset(0.95);
-    hstack->GetYaxis()->SetTickLength(0.015);
-    double title_size = 1.1*hstack->GetYaxis()->GetTitleSize();
+    histo->stacked_hist->GetYaxis()->SetTitleOffset(0.95);
+    histo->stacked_hist->GetYaxis()->SetTickLength(0.015);
+    double title_size = 1.1*histo->stacked_hist->GetYaxis()->GetTitleSize();
     if(config->plot_xsec && config->plot_variables.size()==1){ 
-      title_size = 1.0*hstack->GetYaxis()->GetTitleSize();
-      hstack->GetYaxis()->SetTitleOffset(1.05);
+      title_size = 1.0*histo->stacked_hist->GetYaxis()->GetTitleSize();
+      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.05);
     }
     if(config->plot_xsec && config->plot_variables.size()==2){ 
-      title_size = 0.8*hstack->GetYaxis()->GetTitleSize();
-      hstack->GetYaxis()->SetTitleOffset(1.15);
+      title_size = 0.8*histo->stacked_hist->GetYaxis()->GetTitleSize();
+      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.15);
     }
     if(config->plot_xsec && config->plot_variables.size()==3){ 
-      title_size = 0.6*hstack->GetYaxis()->GetTitleSize();
-      hstack->GetYaxis()->SetTitleOffset(1.25);
+      title_size = 0.6*histo->stacked_hist->GetYaxis()->GetTitleSize();
+      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.25);
     }
       
-    hstack->GetYaxis()->SetTitleSize(title_size);
-    hstack->GetYaxis()->SetNdivisions(110);
-    int binmax = total_hist->GetMaximumBin();
-    double ymax = (total_hist->GetBinContent(binmax) + syst_hist->GetBinError(binmax))*1.01;
-    hstack->SetMaximum(ymax);
+    histo->stacked_hist->GetYaxis()->SetTitleSize(title_size);
+    histo->stacked_hist->GetYaxis()->SetNdivisions(110);
+    int binmax = histo->total_hist->GetMaximumBin();
+    double ymax = (histo->total_hist->GetBinContent(binmax) + error_hist->GetBinError(binmax))*1.01;
+    histo->stacked_hist->SetMaximum(ymax);
     canvas->Modified();
 
     // Text position and content
-    double width = 0.65*(hstack->GetXaxis()->GetXmax()-hstack->GetXaxis()->GetXmin())+hstack->GetXaxis()->GetXmin();
-    double height = hstack->GetMaximum();
-    double upper_text_size = 0.6*hstack->GetYaxis()->GetTitleSize();
+    double width = 0.65*(histo->stacked_hist->GetXaxis()->GetXmax()-histo->stacked_hist->GetXaxis()->GetXmin())+histo->stacked_hist->GetXaxis()->GetXmin();
+    double height = histo->stacked_hist->GetMaximum();
+    double upper_text_size = 0.6*histo->stacked_hist->GetYaxis()->GetTitleSize();
     if(config->show_info) DrawInfo(width, height, upper_text_size);
     
     TString output_file = config->output_file;
@@ -286,6 +295,7 @@ class PlotManager
     canvas->SaveAs(output_file);
   }
 
+/*
   // Plot a 1D stacked hist
   void PlotMulti1D(std::vector<TH1D*> total_hist, std::vector<TH1D*> syst_hist, size_t i, size_t j = -1){
 
@@ -384,7 +394,18 @@ class PlotManager
     output_file.ReplaceAll(".","_"+name+".");
     canvas->SaveAs(output_file);
   }
+*/
 
+  
+  // Make the efficiency and purity plots for up to 3 variables
+  void PlotEffPur(Histo1D* histo, size_t var_i){
+
+    // Efficiency: selected/total in true
+    PlotEfficiency(histo->efficiency.first, histo->efficiency.second, config->plot_variables[var_i]+"_efficiency", titles->names[var_i]+"^{true} ["+titles->units[var_i]+"]", "Efficiency");
+    // Purity: correct selected/total selected
+    PlotEfficiency(histo->purity.first, histo->purity.second, config->plot_variables[var_i]+"_purity", titles->names[var_i]+"^{reco} ["+titles->units[var_i]+"]", "Purity");
+
+  }
 
   // Draw efficiency/purity as function of some variable
   void PlotEfficiency(TH1D* select, TH1D* total, TString name, TString xaxis, TString yaxis){
@@ -417,10 +438,23 @@ class PlotManager
     canvas->Modified();
 
     TString output_file = config->output_file;
-    output_file.ReplaceAll(".","_"+yaxis+".");
     output_file.ReplaceAll(".","_"+name+".");
     canvas->SaveAs(output_file);
 
+  }
+
+  void PlotAllSysts(Histo1D* histo){
+    for(auto const& syst : config->systematics){
+      if(syst=="genie") PlotSyst(histo->systematics->genie);
+      if(syst=="flux") PlotSyst(histo->systematics->flux);
+      if(syst=="detector") PlotSyst(histo->systematics->detector);
+    }
+  }
+
+  void PlotSyst(Systematics* syst){
+    Plot2D(syst->covariance, syst->covariance->GetName(), "Bin i", "Bin j");
+    Plot2D(syst->frac_covariance, syst->frac_covariance->GetName(), "Bin i", "Bin j");
+    Plot2D(syst->correlation, syst->correlation->GetName(), "Bin i", "Bin j");
   }
 
   // Plot a 2D histogram
@@ -455,64 +489,6 @@ class PlotManager
     canvas->SaveAs(output_file);
   }
 
-  // Make the efficiency and purity plots for up to 3 variables
-  void PlotEffPur(const std::vector<Interaction> &interactions, TString name, std::vector<std::vector<double>> bin_edges, int i, int j = -1, int bin_j = -1){
-
-    double edges_array[bin_edges[i].size()];
-    std::copy(bin_edges[i].begin(), bin_edges[i].end(), edges_array);
-
-    TH1D *eff_numerator = new TH1D("eff_numerator", "", bin_edges[i].size()-1, edges_array);
-    TH1D *eff_denom = new TH1D("eff_denom", "", bin_edges[i].size()-1, edges_array);
-    TH1D *pur_numerator = new TH1D("pur_numerator", "", bin_edges[i].size()-1, edges_array);
-    TH1D *pur_denom = new TH1D("pur_denom", "", bin_edges[i].size()-1, edges_array);
-
-    for (auto const& in : interactions){
-      // Denominator of efficiency plot is all interactions that are selected in truth
-      if(in.true_selected){ 
-        if(j == -1){ 
-          eff_denom->Fill(in.true_variables[i]);
-        }
-        else if(in.true_variables[j] >= bin_edges[j][bin_j] && in.true_variables[j] < bin_edges[j][bin_j+1]){
-          eff_denom->Fill(in.true_variables[i]);
-        }
-      }
-      // Denominator of purity plot is all interaction that are selected after reconstruction
-      if(in.selected){ 
-        if(j == -1){ 
-          pur_denom->Fill(in.variables[i]);
-        }
-        else if(in.variables[j] >= bin_edges[j][bin_j] && in.variables[j] < bin_edges[j][bin_j+1]){
-          pur_denom->Fill(in.variables[i]);
-        }
-      }
-      // Numerator of efficiency and purity plots is all interactions that are selected in both truth and reco
-      if(in.selected && in.true_selected){ 
-        if(j == -1){
-          eff_numerator->Fill(in.true_variables[i]);
-          pur_numerator->Fill(in.variables[i]);
-        }
-        else{
-          if(in.true_variables[j] >= bin_edges[j][bin_j] && in.true_variables[j] < bin_edges[j][bin_j+1]){
-            eff_numerator->Fill(in.true_variables[i]);
-          }
-          if(in.variables[j] >= bin_edges[j][bin_j] && in.variables[j] < bin_edges[j][bin_j+1]){
-            pur_numerator->Fill(in.variables[i]);
-          }
-        }
-      }
-    }
-
-    // Efficiency: selected/total in true
-    PlotEfficiency(eff_numerator, eff_denom, name, titles->names[i]+"^{true} ["+titles->units[i]+"]", "Efficiency");
-    // Purity: correct selected/total selected
-    PlotEfficiency(pur_numerator, pur_denom, name, titles->names[i]+"^{reco} ["+titles->units[i]+"]", "Purity");
-
-    if(eff_numerator) delete eff_numerator; 
-    if(eff_denom) delete eff_denom;
-    if(pur_numerator) delete pur_numerator;
-    if(pur_denom) delete pur_denom;
-
-  }
 
   
 };

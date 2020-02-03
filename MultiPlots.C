@@ -36,9 +36,11 @@
 #include "Types/Titles.h"
 #include "Types/BinManager.h"
 #include "Types/PlotManager.h"
+#include "Types/Plotter.h"
 #include "Types/HistManager.h"
 #include "Types/DataManager.h"
 #include "Types/SystManager.h"
+#include "Types/SystCalculator.h"
 #include "Types/Interaction.h"
 #include "Types/Selection.h"
 #include "Functions/StyleSetter.h"
@@ -60,7 +62,6 @@ void MultiPlots(){
   // Get from configuration
   std::cout<<"Getting labels...\n";
   Titles *titles = new Titles(config);
-  PlotManager *plotman = new PlotManager(config, titles);
   std::cout<<"...Finished.\n";
 
   // Get the plotting variable
@@ -80,25 +81,21 @@ void MultiPlots(){
   // Get the binning using the first input file
   std::cout<<"Getting the correct binning...\n";
   BinManager *binman = new BinManager(config, datamans[0]);
-  HistManager *histman = new HistManager(config, datamans[0], binman);
-  std::vector<std::vector<double>> bin_edges = binman->GetBinning(datamans[0]->total_data);
-  //std::vector<std::vector<double>> bin_edges = binman->bin_edges;
-
-  SystManager *systman = new SystManager(config, plotman);
   std::cout<<"...Finished.\n";
 
-  // Calculate how many 1D histograms the choice of variables and binning would produce
-  int n_hists = 0;
-  if(config->plot_variables.size() == 1) n_hists = 1;
-  else if(config->plot_variables.size() == 2){
-    n_hists = bin_edges[0].size() + bin_edges[1].size();
-  }
-  else if(config->plot_variables.size() == 3){
-    n_hists = 3 + (bin_edges[0].size()-1)*(bin_edges[1].size()-1) 
-              + (bin_edges[0].size()-1)*(bin_edges[2].size()-1) 
-              + (bin_edges[1].size()-1)*(bin_edges[2].size()-1);
-  }
+  // Make every possible histogram
+  std::cout<<"Creating all of the histograms...\n";
+  HistManager *histman = new HistManager(config, datamans[0], binman, 0);
+  std::cout<<"...Finished.\n";
 
+  // Calculate systematics and associate to histograms
+  std::cout<<"Calculating the systematics...\n";
+  SystCalculator(config, histman, datamans[0], 0);
+  std::cout<<"...Finished.\n";
+
+  
+  // Calculate how many 1D histograms the choice of variables and binning would produce
+  int n_hists = histman->GetNHists();
   // Ask user if they want to make that many histograms
   std::string response = "y";
   if(n_hists>10){
@@ -106,6 +103,30 @@ void MultiPlots(){
     std::cin>>response;
   }
   if(response=="n") exit(1);
+
+  // Initialise the plotter
+  std::cout<<"Making the plots...\n";
+  Plotter *plotter = new Plotter(config, titles);
+  for(size_t i = 0; i < config->plot_variables.size(); i++){
+    if(!config->show_plots[i]) continue;
+    if(config->show_stat_error) plotter->Plot1DWithErrors(histman->GetHisto1D(config->plot_variables[i]), i);
+    else plotter->Plot1D(histman->GetHisto1D(config->plot_variables[i]), i);
+    if(config->plot_eff_pur && config->stage == "reco"){
+      plotter->PlotEffPur(histman->GetHisto1D(config->plot_variables[i]), i);
+    }
+    if(config->plot_correlation){
+      plotter->PlotAllSysts(histman->GetHisto1D(config->plot_variables[i]));
+    }
+  }
+  std::cout<<"...Finished.\n";
+
+
+/*
+  PlotManager *plotman = new PlotManager(config, titles);
+  std::vector<std::vector<double>> bin_edges = binman->GetBinning(datamans[0]->total_data);
+  //std::vector<std::vector<double>> bin_edges = binman->bin_edges;
+
+  SystManager *systman = new SystManager(config, plotman);
 
   // Loop over the number of variables - this is how many sets of 1D hists we will have
   std::cout<<"Making the plots...\n";
@@ -218,81 +239,9 @@ void MultiPlots(){
         
       }
 
-      // Loop over the other variables - this is how many sets of 3D hists we will have
-      for(size_t d_k = 0; d_k < config->plot_variables.size(); d_k++){
-        if(d_k == d_i || d_k <= d_j) continue;
-        // Only produce these plots for 3 variables
-        if(config->plot_variables.size() != 3) continue;
-
-        // Loop over the bins for variable 3
-        for(size_t bin_j = 0; bin_j < bin_edges[d_j].size()-1; bin_j++){
-
-          // If maximum error set, get new k bins based on the j binning
-          std::vector<std::vector<double>> bin_edges_copy = bin_edges;
-          if(config->max_error>0){
-            std::vector<double> bin_edges_new = binman->ChangeBinning2D(datamans[0]->total_data, bin_edges, d_k, d_j, bin_j);
-            bin_edges_copy[d_k] = bin_edges_new;
-          }
-
-          // Loop over the bins for variable 2
-          for(size_t bin_k = 0; bin_k < bin_edges_copy[d_k].size()-1; bin_k++){
-
-            // If maximum error set, get new i bins based on the j and k binning
-            if(config->max_error>0){
-              std::vector<double> bin_edges_new = binman->ChangeBinning2D(datamans[0]->total_data, bin_edges_copy, d_i, d_j, bin_j, d_k, bin_k);
-              bin_edges_copy[d_i] = bin_edges_new;
-            }
-
-            // Get the file name and title of the histogram
-            TString name_3D = config->plot_variables[d_i] + "_"
-                              + config->plot_variables[d_j] +"_"+ Form("%.1f", bin_edges_copy[d_j][bin_j]) +"_"+ Form("%.1f", bin_edges_copy[d_j][bin_j+1]) +"_"
-                              + config->plot_variables[d_k] +"_"+ Form("%.1f", bin_edges_copy[d_k][bin_k]) +"_"+ Form("%.1f", bin_edges_copy[d_k][bin_k+1]);
-            TString title_3D = titles->hist_titles[d_j] 
-                               +": ["+ Form("%.2f", bin_edges_copy[d_j][bin_j]) +", "+ Form("%.2f", bin_edges_copy[d_j][bin_j+1]) +"] "
-                               + titles->hist_titles[d_k] 
-                               +": ["+ Form("%.2f", bin_edges_copy[d_k][bin_k]) +", "+ Form("%.2f", bin_edges_copy[d_k][bin_k+1]) +"]";
-
-            // Get the statistical errors per bin
-            std::vector<TH1D*> total_hist_3D;
-            std::vector<TH1D*> syst_hist_3D;
-            TH1D* error_band_3D;
-            std::pair<THStack*, TLegend*> stack_3D;
-            for(size_t i = 0; i < config->input_file.size(); i++){
-              total_hist_3D.push_back(histman->GetTotalHist(datamans[i]->total_data, name_3D, bin_edges_copy, i, d_i, d_j, bin_j, d_k, bin_k));
-              syst_hist_3D.push_back(total_hist_3D[i]);
-              if(config->show_syst_error){
-                systman->AddErrors(syst_hist_3D[i], systman->GetSystHist(datamans[i]->total_data, datamans[i]->data_used, name_3D, bin_edges_copy, i, d_i, d_j, bin_j, d_k, bin_k));
-                systman->AddErrors(syst_hist_3D[i], systman->GetDetSystHist(name_3D, bin_edges_copy, i, d_i, d_j, bin_j, d_k, bin_k));
-                systman->AddErrors(syst_hist_3D[i], systman->GetBkgSystHist(name_3D, bin_edges_copy, i, d_i));
-              }
-
-              if(config->input_file.size() == 1){
-                error_band_3D = histman->GetErrorBand(total_hist_3D[0]);
-                // Don't draw empty histograms
-                //if(error_band_3D->Integral(0, error_band_3D->GetNbinsX()) == 0) continue;
-
-                // Create a 1D stacked histogram for each of the bins
-                stack_3D = histman->StackHist1D(datamans[0]->stack_data, name_3D, title_3D, bin_edges_copy, d_i, d_j, bin_j, d_k, bin_k);
-              }
-            }
-
-            // Draw the plots
-            if(config->input_file.size() == 1){
-              if(config->show_stat_error) plotman->Plot1DWithErrors(stack_3D.first, stack_3D.second, error_band_3D, total_hist_3D[0], syst_hist_3D[0], d_i, d_j, d_k);
-              else plotman->Plot1D(stack_3D.first, stack_3D.second, total_hist_3D[0], syst_hist_3D[0], d_i, d_j, d_k);
-            }
-            else plotman->PlotMulti1D(total_hist_3D, syst_hist_3D, d_i, d_j, d_k);
-
-            // Plot efficiency and purity if option selected and reconstruction selected
-            if(config->input_file.size() == 1 && config->plot_eff_pur && config->stage == "reco"){
-              plotman->PlotEffPur(datamans[0]->interactions, name_3D, bin_edges_copy, d_i, d_j, bin_j, d_k, bin_k);
-            }
-          }
-        }
-      }
-
     }
   }
   std::cout<<"...Finished.\n";
+  */
 
 }

@@ -280,17 +280,12 @@ class Titles
   }
 
   // Get the Y axis title when plotting cross sections
-  TString GetXSecTitle(int i, int j = -1, int k = -1){
+  TString GetXSecTitle(int i, int j = -1){
 
     TString xsec_title = "d#sigma/d"+names[i]+" [10^{-38}#frac{cm^{2}}{"+units[i]+" n}]";
 
     if(j != -1){
       xsec_title = "d^{2}#sigma/d"+names[i]+"d"+names[j]+" [10^{-38}#frac{cm^{2}}{"+units[i]+" "+units[j]+" n}]";
-
-      if(k != -1){
-        xsec_title = "d^{3}#sigma/d"+names[i]+"d"+names[j]+"d"+names[k]+" [10^{-38}#frac{cm^{2}}{"+units[i]+" "+units[j]+" "+units[k]+" n}]";
-      }
-
     }
     return TString(xsec_title);
   }

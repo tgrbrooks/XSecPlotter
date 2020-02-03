@@ -25,7 +25,7 @@ MetaDataPath: XSecTree/metadata
 WeightPath: XSecTree/weight
 
 // Name of output file (.root for modifiable canvas)
-OutputFile: test/flux.png
+OutputFile: test/new.png
 
 //------------------------------------------------------------------------
 //          Select neutrino interaction (commas for multiple)
@@ -147,8 +147,11 @@ ShowStatError: false
 // Show systematic error (true)
 ShowSystError: true
 
-// Constant detector systematic error (percentage)
-DetectorSyst: 0
+// List of systematics to include (genie, flux, detector, background, constant)
+Systematics: genie, flux, detector, background, constant
+
+// Value of constant percentage systematic error (0->1)
+ConstantSyst: 0.02
 
 // Show error bars on histograms (true)
 ShowErrorBars: true

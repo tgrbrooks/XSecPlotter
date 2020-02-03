@@ -17,12 +17,6 @@ class BinManager
   std::map<TString, std::vector<double>> bin_edges_1D;
   // 2D binning - X and Y bins
   std::map<std::pair<TString, TString>, std::pair<std::vector<double>, std::vector<double>>> bin_edges_2D;
-  // 2D 1D slice binning - X bins for each Y bin, Y bins for each X bin
-  std::map<std::pair<TString, TString>, std::vector<std::vector<double>>> bin_edges_1D_from_2D;
-  // 3D 2D slice binning
-  std::map<std::vector<TString>, std::vector<std::pair<std::vector<double>, std::vector<double>>>> bin_edges_2D_from_3D;
-  // 3D 1D slice binning
-  std::map<std::vector<TString>, std::vector<std::vector<std::vector<double>>>> bin_edges_1D_from_3D;
 
   BinManager(){}
 
@@ -40,29 +34,6 @@ class BinManager
         bin_edges_2D[key2D] = std::make_pair(bin_edges[i], bin_edges[j]);
       }
     }
-    // Do some messing around to make sure all bins above max error
-    if(config->max_error > 0){
-      for(size_t i = 0; i < config->plot_variables.size(); i++){
-        for(size_t j = 0; j < config->plot_variables.size(); j++){
-          std::pair<TString, TString> key2D = std::make_pair(config->plot_variables[i], config->plot_variables[j]);
-          for(size_t bin_j = 0; bin_j < bin_edges[j].size()-1; bin_j++){
-            bin_edges_1D_from_2D[key2D].push_back(ChangeBinning2D(dataman->total_data, bin_edges, i, j, bin_j));
-          }
-          for(size_t k = 0; k < config->plot_variables.size(); k++){
-            std::vector<TString> key3D = {config->plot_variables[i], config->plot_variables[j], config->plot_variables[k]};
-            for(size_t bin_j = 0; bin_j < bin_edges[j].size()-1; bin_j++){
-              std::vector<std::vector<double>> slice_edges;
-              for(size_t bin_k = 0; bin_k < bin_edges[j].size()-1; bin_k++){
-                slice_edges.push_back(ChangeBinning2D(dataman->total_data, bin_edges, i, j, bin_j, k, bin_k));
-                // TODO 2D binning from 3D
-                bin_edges_2D_from_3D[key3D].push_back(std::make_pair(bin_edges[i], bin_edges[j]));
-              }
-              bin_edges_1D_from_3D[key3D].push_back(slice_edges);
-            }
-          }
-        }
-      }
-    }
 
   }
 
@@ -75,38 +46,6 @@ class BinManager
     return bin_edges_1D[plot_var];
   }
 
-  std::vector<double> Get1DSliceFrom2D(TString plot_var, TString slice_var, size_t slice_bin){
-    std::vector<double> null;
-    std::pair<TString, TString> key = std::make_pair(plot_var, slice_var);
-    if(bin_edges_1D_from_2D.find(key) == bin_edges_1D_from_2D.end()){
-      std::cout<<"couldn't find binning for variables!\n";
-      return null;
-    }
-    if(slice_bin >= bin_edges_1D_from_2D[key].size()){
-      std::cout<<"couldn't find binning for variables!\n";
-      return null;
-    }
-    return bin_edges_1D_from_2D[key][slice_bin];
-  }
-
-  std::vector<double> Get1DSliceFrom3D(TString plot_var, TString slice_var1, size_t slice_bin1, TString slice_var2, size_t slice_bin2){
-    std::vector<double> null;
-    std::vector<TString> key = {plot_var, slice_var1, slice_var2};
-    if(bin_edges_1D_from_3D.find(key) == bin_edges_1D_from_3D.end()){
-      std::cout<<"couldn't find binning for variables!\n";
-      return null;
-    }
-    if(slice_bin1 >= bin_edges_1D_from_3D[key].size()){
-      std::cout<<"couldn't find binning for variables!\n";
-      return null;
-    }
-    if(slice_bin2 >= bin_edges_1D_from_3D[key][slice_bin1].size()){
-      std::cout<<"couldn't find binning for variables!\n";
-      return null;
-    }
-    return bin_edges_1D_from_3D[key][slice_bin1][slice_bin2];
-  }
-
   std::pair<std::vector<double>, std::vector<double>> Get2DBinning(TString plot_var1, TString plot_var2){
     std::vector<double> null;
     std::pair<TString, TString> key = std::make_pair(plot_var1, plot_var2);
@@ -115,20 +54,6 @@ class BinManager
       return std::make_pair(null, null);
     }
     return bin_edges_2D[key];
-  }
-
-  std::pair<std::vector<double>, std::vector<double>> Get2DSliceFrom3D(TString plot_var1, TString plot_var2, TString slice_var, size_t slice_bin){
-    std::vector<double> null;
-    std::vector<TString> key = {plot_var1, plot_var2, slice_var};
-    if(bin_edges_2D_from_3D.find(key) == bin_edges_2D_from_3D.end()){
-      std::cout<<"couldn't find binning for variables!\n";
-      return std::make_pair(null, null);
-    }
-    if(slice_bin >= bin_edges_2D_from_3D[key].size()){
-      std::cout<<"couldn't find binning for variables!\n";
-      return std::make_pair(null, null);
-    }
-    return bin_edges_2D_from_3D[key][slice_bin];
   }
 
   // Set the minimum bin value
@@ -271,31 +196,52 @@ class BinManager
     }
 
     // If a maximum bin error is set
-    if(config->max_error > 0){
-      for(size_t i = 0; i < config->plot_variables.size(); i++){
-        // Get the optimal binning for the first variable
-        TH1D *temp_hist = new TH1D("temp_hist", "", hist_bins[i], hist_min[i], hist_max[i]);
-        // Loop over data
-        for(auto const& data : data_v){
-          // Fill temporary histogram
-          temp_hist->Fill(data[i]);
-        }
-        // Include scale factor bin by bin as Scale() won't change errors
-        for(size_t n = 1; n <= temp_hist->GetNbinsX(); n++){
-          temp_hist->SetBinContent(n, temp_hist->GetBinContent(n)*config->pot_scale_fac[0]);
-        }
-        // Change the binning so that all bin errors below maximum
-        std::vector<double> bin_edges = ChangeBinning(temp_hist, hist_max[i]);
-        delete temp_hist;
-        all_bin_edges[i] = bin_edges;
+    if(config->max_error <= 0) return all_bin_edges;
+
+
+    if(config->plot_variables.size() == 1){
+      // Get the optimal binning for the first variable
+      TH1D *temp_hist = new TH1D("temp_hist", "", hist_bins[0], hist_min[0], hist_max[0]);
+      // Loop over data
+      for(auto const& data : data_v){
+        // Fill temporary histogram
+        temp_hist->Fill(data[0]);
       }
+      // Include scale factor bin by bin as Scale() won't change errors
+      for(size_t n = 1; n <= temp_hist->GetNbinsX(); n++){
+        temp_hist->SetBinContent(n, temp_hist->GetBinContent(n)*config->pot_scale_fac[0]);
+      }
+      // Change the binning so that all bin errors below maximum
+      std::vector<double> bin_edges = ChangeBinning(temp_hist, hist_max[0]);
+      delete temp_hist;
+      all_bin_edges[0] = bin_edges;
     }
+    else if(config->plot_variables.size() == 2){
+      // Create 2D histogram with the calculated binning
+      TH2D *temp_hist = new TH2D("temp_hist", "", hist_bins[0], hist_min[0], hist_max[0], hist_bins[1], hist_min[1], hist_max[1]);
+      // Fill with the data
+      for(auto const& data : data_v){
+        temp_hist->Fill(data[0], data[1]);
+      }
+      // Include scale factor bin by bin as Scale() won't change errors
+      for(size_t i = 1; i <= temp_hist->GetNbinsX(); i++){
+        for(size_t j = 1; j <= temp_hist->GetNbinsX(); j++){
+          temp_hist->SetBinContent(i, j, temp_hist->GetBinContent(i, j)*config->pot_scale_fac[0]);
+        }
+      }
+      std::pair<std::vector<double>, std::vector<double>> bin_edges = ChangeBinning2D(temp_hist, hist_max[0], hist_max[1]);
+      delete temp_hist;
+      all_bin_edges[0] = bin_edges.first;
+      all_bin_edges[1] = bin_edges.second;
+
+    }
+    
 
     return all_bin_edges;
   }
 
   // Rebin to the maximum bin error for 2D histograms
-  std::vector<double> ChangeBinning2D(const std::vector<std::vector<double>> &data, std::vector<std::vector<double>> bin_edges, int i, int j, int bin_j, int k = -1, int bin_k = -1){
+  std::vector<double> ChangeBinning2D(const std::vector<std::vector<double>> &data, std::vector<std::vector<double>> bin_edges, int i, int j, int bin_j){
 
     double edges_array[bin_edges[i].size()];
     std::copy(bin_edges[i].begin(), bin_edges[i].end(), edges_array);
@@ -304,12 +250,7 @@ class BinManager
     for(auto const& dat : data){
       // Fill temporary histogram
       if(dat[j] >= bin_edges[j][bin_j] && dat[j] < bin_edges[j][bin_j+1]){
-        if(k == -1){
-          temp_hist->Fill(dat[i]);
-        }
-        else if(dat[k] >= bin_edges[k][bin_k] && dat[k] < bin_edges[k][bin_k+1]){
-          temp_hist->Fill(dat[i]);
-        }
+        temp_hist->Fill(dat[i]);
       }
     }
     // Include scale factor bin by bin as Scale() won't change errors
@@ -321,6 +262,97 @@ class BinManager
     delete temp_hist;
     return bin_edges_new;
 
+  }
+
+  // Rebin to the maximum bin error for 2D histograms
+  std::pair<std::vector<double>, std::vector<double>> ChangeBinning2D(TH2D* hist, double max1, double max2){
+
+    std::vector<double> xbin_edges;
+    std::vector<double> ybin_edges;
+    for(size_t i = 1; i <= hist->GetNbinsX(); i++){
+      xbin_edges.push_back(hist->ProjectionX()->GetBinLowEdge(i));
+    }
+    xbin_edges.push_back(max1);
+    for(size_t j = 1; j <= hist->GetNbinsY(); j++){
+      ybin_edges.push_back(hist->ProjectionY()->GetBinLowEdge(j));
+    }
+    ybin_edges.push_back(max2);
+
+    // Loop over all X and Y bins
+    for(size_t i = 1; i <= hist->GetNbinsX(); i++){
+      for(size_t j = 1; j <= hist->GetNbinsX(); j++){
+        // See if the bin error is above the limit
+        if(hist->GetBinError(i,j)/hist->GetBinContent(i,j) > config->max_error || hist->GetBinContent(i,j) == 0){
+
+          // if not in the last x and y bins
+          if(i != hist->GetNbinsX() && j != hist->GetNbinsY()){
+            // Take a look in the next bin over in x and y
+            double xcontent = hist->GetBinContent(i+1, j);
+            double ycontent = hist->GetBinContent(i, j+1);
+            // Remove the bin edge in whichever direction has more entries
+            if(xcontent > ycontent){
+              xbin_edges.erase(xbin_edges.begin()+i);
+            }
+            else{
+              ybin_edges.erase(ybin_edges.begin()+i);
+            }
+            TH2D* new_hist = Rebin2D(hist, xbin_edges, ybin_edges);
+            return ChangeBinning2D(new_hist, max1, max2);
+          }
+          // If not in the last x bin
+          else if(i != hist->GetNbinsX()){
+            xbin_edges.erase(xbin_edges.begin()+i);
+            TH2D* new_hist = Rebin2D(hist, xbin_edges, ybin_edges);
+            return ChangeBinning2D(new_hist, max1, max2);
+          }
+          // If not in the last y bin
+          else if(j != hist->GetNbinsY()){
+            ybin_edges.erase(ybin_edges.begin()+i);
+            TH2D* new_hist = Rebin2D(hist, xbin_edges, ybin_edges);
+            return ChangeBinning2D(new_hist, max1, max2);
+          }
+          else{
+            // Look at the previous bin in x and y
+            double xcontent = hist->GetBinContent(i-1, j);
+            double ycontent = hist->GetBinContent(i, j-1);
+            // Remove the bin edge in whichever direction has least entries
+            if(xcontent < ycontent){
+              xbin_edges.erase(xbin_edges.begin()+(xbin_edges.size()-2));
+            }
+            else{
+              ybin_edges.erase(ybin_edges.begin()+(ybin_edges.size()-2));
+            }
+            return std::make_pair(xbin_edges, ybin_edges);
+          }
+        }
+      }
+    }
+    return std::make_pair(xbin_edges, ybin_edges);
+
+  }
+
+  TH2D* Rebin2D(TH2D* hist, std::vector<double> xbin_edges, std::vector<double> ybin_edges){
+    double xedges_array[xbin_edges.size()];
+    std::copy(xbin_edges.begin(), xbin_edges.end(), xedges_array);
+    double yedges_array[ybin_edges.size()];
+    std::copy(ybin_edges.begin(), ybin_edges.end(), yedges_array);
+    TH2D* temp_hist = new TH2D("temp", "", xbin_edges.size()-1, xedges_array, ybin_edges.size()-1, yedges_array);
+    for(size_t i = 1; i < hist->GetNbinsX(); i++){
+      double xcenter = hist->GetXaxis()->GetBinCenter(i);
+      for(size_t j = 1; j < hist->GetNbinsX(); j++){
+        double ycenter = hist->GetYaxis()->GetBinCenter(j);
+        double weight = hist->GetBinContent(i, j);
+        temp_hist->Fill(xcenter, ycenter, weight);
+      }
+    }
+    TH2D* new_hist = new TH2D("new", "", xbin_edges.size()-1, xedges_array, ybin_edges.size()-1, yedges_array);
+    for(size_t i = 1; i < temp_hist->GetNbinsX(); i++){
+      for(size_t j = 1; j < temp_hist->GetNbinsX(); j++){
+        new_hist->SetBinContent(i, j, temp_hist->GetBinContent(i, j));
+      }
+    }
+    return new_hist;
+    
   }
 
 };

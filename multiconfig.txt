@@ -148,7 +148,7 @@ ShowStatError: false
 ShowSystError: true
 
 // List of systematics to include (genie, flux, detector, background, constant)
-Systematics: detector
+Systematics: flux
 
 // Value of constant percentage systematic error (0->1)
 ConstantSyst: 0.027
@@ -158,6 +158,9 @@ ShowErrorBars: true
 
 // Produce covariance and correlation matrices for systematic errors (true)
 PlotCorrelation: true
+
+// Plot all of the different universes for systematic uncertainties
+PlotUniverses: true
 
 // Produce efficiency and purity plots (true)
 PlotEffPur: false

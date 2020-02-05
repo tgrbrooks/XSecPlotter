@@ -47,6 +47,7 @@ class Configuration
   double constant_syst;
   bool show_error_bars;
   bool plot_correlation;
+  bool plot_universes;
   bool plot_eff_pur;
   bool plot_response; //TODO
   bool unfold; //TODO
@@ -184,6 +185,7 @@ class Configuration
       if(key.find("ConstantSyst") != std::string::npos)    constant_syst = stod(value);
       if(key.find("ShowErrorBars") != std::string::npos)   show_error_bars = (value=="true");
       if(key.find("PlotCorrelation") != std::string::npos) plot_correlation = (value=="true");
+      if(key.find("PlotUniverses") != std::string::npos)   plot_universes = (value=="true");
       if(key.find("PlotEffPur") != std::string::npos)      plot_eff_pur = (value=="true");
       if(key.find("PlotResponse") != std::string::npos)    plot_response = (value=="true");
       if(key.find("Unfold") != std::string::npos)          unfold = (value=="true");

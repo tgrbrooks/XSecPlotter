@@ -74,6 +74,9 @@ class Plotter
     if(config->plot_eff_pur && config->stage == "reco"){
       PlotEffPur(histo, var_i);
     }
+    if(config->plot_universes){
+      PlotUniverses(histo, var_i);
+    }
   }
 
   // Plot a 1D stacked hist with statistical errors on the bottom
@@ -458,6 +461,90 @@ class Plotter
       if(syst=="flux") PlotSyst(histo->systematics->flux);
       if(syst=="detector") PlotSyst(histo->systematics->detector);
     }
+  }
+
+  void PlotUniverses(Histo1D* histo, size_t var_i){
+    for(auto const& syst : config->systematics){
+      if(syst=="genie") PlotUni(histo->total_hist, histo->systematics->genie->universes, var_i);
+      if(syst=="flux") PlotUni(histo->total_hist, histo->systematics->flux->universes, var_i);
+      if(syst=="detector") PlotUni(histo->total_hist, histo->systematics->detector->universes, var_i);
+    }
+  }
+
+  // Plot a 1D stacked hist
+  void PlotUni(TH1D* hist, std::vector<TH1D*> unis, size_t var_i){
+
+    // Create the canvas
+    TString name = unis[0]->GetName();
+    TCanvas *canvas = new TCanvas("canvas"+name+"_unis", "canvas");
+
+    // Split the pad for histogram and error plot
+    canvas->SetTopMargin(0.15);
+    canvas->SetBottomMargin(0.15);
+    canvas->SetLeftMargin(0.12);
+    canvas->SetRightMargin(0.04);
+
+    // Draw the stacked histogram and legend
+    hist->SetFillStyle(0);
+    hist->SetLineWidth(3);
+    hist->SetLineColor(2);
+    hist->Draw("HIST");
+
+    double ymax = 0;
+    std::cout<<"number of unis = "<<unis.size()<<"\n";
+    for(size_t i = 0; i < unis.size(); i++){
+      unis[i]->SetFillStyle(0);
+      unis[i]->SetLineWidth(1);
+      unis[i]->SetLineColor(44);
+      unis[i]->Draw("HIST SAME");
+      double max = unis[i]->GetBinContent(unis[i]->GetMaximumBin());
+      if(max > ymax) ymax = max;
+    }
+    hist->Draw("HIST SAME");
+
+    // Set the titles
+    if(config->plot_xsec){
+      hist->GetYaxis()->SetTitle(titles->GetXSecTitle(var_i));
+    }
+    else if(config->max_error > 0){
+      hist->GetYaxis()->SetTitle("Events (/Bin width)");
+    }
+    else{
+      hist->GetYaxis()->SetTitle("Events");
+    }
+    hist->GetXaxis()->SetTitle(titles->names[var_i]+" ["+titles->units[var_i]+"]");
+    if(titles->units[var_i]=="") hist->GetXaxis()->SetTitle(titles->names[var_i]);
+    // X axis config
+    hist->GetXaxis()->SetTitleOffset(1.);
+    hist->GetXaxis()->SetTickLength(0.02);
+    hist->GetXaxis()->SetTitleSize(1.1*hist->GetXaxis()->GetTitleSize());
+    // Y axis config
+    hist->GetYaxis()->SetTitleOffset(0.9);
+    hist->GetYaxis()->SetTickLength(0.015);
+    double title_size = 1.1*hist->GetYaxis()->GetTitleSize();
+    if(config->plot_xsec && config->plot_variables.size()==1){ 
+      title_size = 1.0*hist->GetYaxis()->GetTitleSize();
+      hist->GetYaxis()->SetTitleOffset(1.0);
+    }
+    if(config->plot_xsec && config->plot_variables.size()==2){ 
+      title_size = 0.8*hist->GetYaxis()->GetTitleSize();
+      hist->GetYaxis()->SetTitleOffset(1.1);
+    }
+      
+    hist->GetYaxis()->SetTitleSize(title_size);
+    hist->GetYaxis()->SetNdivisions(110);
+    hist->SetMaximum(ymax*1.1);
+    canvas->Modified();
+
+    // Text position and content
+    double width = 0.65*(hist->GetXaxis()->GetXmax()-hist->GetXaxis()->GetXmin())+hist->GetXaxis()->GetXmin();
+    double height = hist->GetMaximum();
+    double upper_text_size = 0.6*hist->GetYaxis()->GetTitleSize();
+    if(config->show_info) DrawInfo(width, height, upper_text_size);
+    
+    TString output_file = config->output_file;
+    output_file.ReplaceAll(".","_"+name+"_universes.");
+    canvas->SaveAs(output_file);
   }
 
   void PlotSyst(Systematics* syst){

@@ -330,12 +330,13 @@ class SystCalculator
     TTreeReaderArray<double> lep_mom(tree_reader, "ds_lep_mom");
     TTreeReaderArray<double> lep_theta(tree_reader, "ds_lep_theta");
 
+
     while (tree_reader.Next()) {
 
       if(!sel.InFiducial(*vtx_x, *vtx_y, *vtx_z)) continue;
 
       for(size_t ns = 0; ns < nsims; ns++){
-        if(!sel.IsSelected(nu_pdg[ns], cc[ns], lep_contained[ns], particles_contained[ns], 0, 0, 0, 0)) continue;
+        if(!sel.IsSelected(nu_pdg[ns], true, lep_contained[ns], particles_contained[ns], -1, -1, -1, -1)) continue;
         //holder->Fill(1., ns);
         histman->total->systematics->detector->universes[ns]->Fill(1.);
         for(auto& kv : histman->histos_1D){

@@ -161,7 +161,7 @@ class Titles
 
       // TODO remove units
       if(apply_cos){
-        names[index] = "cos"+ names[index];
+        names[index] = "cos "+ names[index];
         units[index] = "";
         hist_titles[index] = "cos "+hist_titles[index];
       }

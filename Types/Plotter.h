@@ -68,6 +68,14 @@ class Plotter
 
   }
 
+  void All1DPlots(Histo1D* histo, size_t var_i){
+    if(config->show_stat_error) Plot1DWithErrors(histo, var_i);
+    else Plot1D(histo, var_i);
+    if(config->plot_eff_pur && config->stage == "reco"){
+      PlotEffPur(histo, var_i);
+    }
+  }
+
   // Plot a 1D stacked hist with statistical errors on the bottom
   void Plot1DWithErrors(Histo1D* histo, size_t var_i){
 
@@ -97,8 +105,8 @@ class Plotter
 
     // Draw the stacked histogram and legend
     histo->stacked_hist->Draw("HIST");
+    TH1D* error_hist = (TH1D*)histo->total_hist->Clone();
     if(config->show_error_bars){
-      TH1D* error_hist = (TH1D*)histo->total_hist->Clone();
       if(config->show_syst_error){
         for(size_t n = 0; n <= histo->systematics->total->GetNbinsX(); n++){
           error_hist->SetBinError(n, std::sqrt(std::pow(histo->systematics->total->GetBinError(n), 2)
@@ -118,7 +126,7 @@ class Plotter
     }
 
     if(config->plot_stacked){
-      histo->legend->SetNColumns(histo->legend->GetNRows());
+      histo->legend->SetNColumns(histo->legend->GetNRows()*histo->legend->GetNColumns());
       histo->legend->SetFillStyle(0);
       histo->legend->Draw();
     }
@@ -154,6 +162,9 @@ class Plotter
     histo->stacked_hist->GetYaxis()->SetTitleSize(title_size);
     histo->stacked_hist->GetYaxis()->SetNdivisions(110);
     histo->stacked_hist->GetYaxis()->SetTickLength(0.015);
+    int binmax = histo->total_hist->GetMaximumBin();
+    double ymax = (histo->total_hist->GetBinContent(binmax) + error_hist->GetBinError(binmax))*1.01;
+    histo->stacked_hist->SetMaximum(ymax);
     canvas->Modified();
 
     // Info text
@@ -173,6 +184,7 @@ class Plotter
     histo->error_band->SetLineColor(38);
     histo->error_band->GetYaxis()->SetTitle("#sigma_{stat} (%)");
     histo->error_band->GetXaxis()->SetTitle(titles->names[var_i]+" ["+titles->units[var_i]+"]");
+    if(titles->units[var_i]=="") histo->error_band->GetXaxis()->SetTitle(titles->names[var_i]);
 
     double size_ratio = upper_pad->GetAbsHNDC()/lower_pad->GetAbsHNDC();
     // x axis config
@@ -235,7 +247,7 @@ class Plotter
     }
 
     if(config->plot_stacked){
-      histo->legend->SetNColumns(histo->legend->GetNRows());
+      histo->legend->SetNColumns(histo->legend->GetNRows()*histo->legend->GetNColumns());
       histo->legend->SetFillStyle(0);
       histo->legend->Draw();
       canvas->Update();
@@ -256,25 +268,22 @@ class Plotter
       histo->stacked_hist->GetYaxis()->SetTitle("Events");
     }
     histo->stacked_hist->GetXaxis()->SetTitle(titles->names[var_i]+" ["+titles->units[var_i]+"]");
+    if(titles->units[var_i]=="") histo->stacked_hist->GetXaxis()->SetTitle(titles->names[var_i]);
     // X axis config
     histo->stacked_hist->GetXaxis()->SetTitleOffset(1.);
     histo->stacked_hist->GetXaxis()->SetTickLength(0.02);
     histo->stacked_hist->GetXaxis()->SetTitleSize(1.1*histo->stacked_hist->GetXaxis()->GetTitleSize());
     // Y axis config
-    histo->stacked_hist->GetYaxis()->SetTitleOffset(0.95);
+    histo->stacked_hist->GetYaxis()->SetTitleOffset(0.9);
     histo->stacked_hist->GetYaxis()->SetTickLength(0.015);
     double title_size = 1.1*histo->stacked_hist->GetYaxis()->GetTitleSize();
     if(config->plot_xsec && config->plot_variables.size()==1){ 
       title_size = 1.0*histo->stacked_hist->GetYaxis()->GetTitleSize();
-      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.05);
+      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.0);
     }
     if(config->plot_xsec && config->plot_variables.size()==2){ 
       title_size = 0.8*histo->stacked_hist->GetYaxis()->GetTitleSize();
-      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.15);
-    }
-    if(config->plot_xsec && config->plot_variables.size()==3){ 
-      title_size = 0.6*histo->stacked_hist->GetYaxis()->GetTitleSize();
-      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.25);
+      histo->stacked_hist->GetYaxis()->SetTitleOffset(1.1);
     }
       
     histo->stacked_hist->GetYaxis()->SetTitleSize(title_size);
@@ -401,9 +410,9 @@ class Plotter
   void PlotEffPur(Histo1D* histo, size_t var_i){
 
     // Efficiency: selected/total in true
-    PlotEfficiency(histo->efficiency.first, histo->efficiency.second, config->plot_variables[var_i]+"_efficiency", titles->names[var_i]+"^{true} ["+titles->units[var_i]+"]", "Efficiency");
+    PlotEfficiency(histo->efficiency.first, histo->efficiency.second, TString(histo->total_hist->GetName())+"_efficiency", titles->names[var_i]+"^{true} ["+titles->units[var_i]+"]", "Efficiency");
     // Purity: correct selected/total selected
-    PlotEfficiency(histo->purity.first, histo->purity.second, config->plot_variables[var_i]+"_purity", titles->names[var_i]+"^{reco} ["+titles->units[var_i]+"]", "Purity");
+    PlotEfficiency(histo->purity.first, histo->purity.second, TString(histo->total_hist->GetName())+"_purity", titles->names[var_i]+"^{reco} ["+titles->units[var_i]+"]", "Purity");
 
   }
 
@@ -455,6 +464,35 @@ class Plotter
     Plot2D(syst->covariance, syst->covariance->GetName(), "Bin i", "Bin j");
     Plot2D(syst->frac_covariance, syst->frac_covariance->GetName(), "Bin i", "Bin j");
     Plot2D(syst->correlation, syst->correlation->GetName(), "Bin i", "Bin j");
+  }
+
+  void PlotAllSysts(Histo2D* histo){
+    for(auto const& syst : config->systematics){
+      if(syst=="genie") PlotSyst(histo->systematics->genie);
+      if(syst=="flux") PlotSyst(histo->systematics->flux);
+      if(syst=="detector") PlotSyst(histo->systematics->detector);
+    }
+  }
+
+  void PlotSyst(Systematics2D* syst){
+    Plot2D(syst->covariance, syst->covariance->GetName(), "Bin i", "Bin j");
+    Plot2D(syst->frac_covariance, syst->frac_covariance->GetName(), "Bin i", "Bin j");
+    Plot2D(syst->correlation, syst->correlation->GetName(), "Bin i", "Bin j");
+  }
+
+  void Plot2DSlices(Histo2D* histo, size_t var_i, size_t var_j){
+    // Loop over all bins in the second variable
+    for(size_t j = 1; j <= histo->total_hist->GetNbinsY(); j++){
+      // Make all relevant plots
+      All1DPlots(histo->Slice(j), var_i);
+    }
+  }
+
+  void Plot2DHisto(Histo2D* histo, size_t var_i, size_t var_j){
+    TString name = config->plot_variables[var_i]+"_"+config->plot_variables[var_j]+"2D";
+    TString xaxis = titles->names[var_i]+" ["+titles->units[var_i]+"]";
+    TString yaxis = titles->names[var_j]+" ["+titles->units[var_j]+"]";
+    Plot2D(histo->total_hist, name, xaxis, yaxis);
   }
 
   // Plot a 2D histogram

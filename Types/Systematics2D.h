@@ -1,53 +1,57 @@
-#ifndef SYSTEMATICS_H
-#define SYSTEMATICS_H
+#ifndef SYSTEMATICS2D_H
+#define SYSTEMATICS2D_H
 
 // Structure for holding systematic error information
-class Systematics
+class Systematics2D
 {
   public:
 
   TString sname;
-  std::vector<TH1D*> universes;
-  TH1D* mean_syst;
+  std::vector<TH2D*> universes;
+  TH2D* mean_syst;
   TH2D* covariance;
   TH2D* frac_covariance;
   TH2D* correlation;
 
-  Systematics(){
+  Systematics2D(){
   }
 
-  Systematics(TH1D* hist, TString name){
-    mean_syst = (TH1D*)hist->Clone(TString(hist->GetName())+name);
+  Systematics2D(TH2D* hist, TString name){
+    mean_syst = (TH2D*)hist->Clone(TString(hist->GetName())+name);
     sname = TString(mean_syst->GetName());
     mean_syst->Reset();
-    size_t nbins = mean_syst->GetNbinsX();
+    size_t nbins = mean_syst->GetNbinsX()*mean_syst->GetNbinsY();
     covariance = new TH2D(sname+"_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
     frac_covariance = new TH2D(sname+"_frac_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
     correlation = new TH2D(sname+"_correlation", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
   }
 /*
-  Systematics(TH1D* m, bool empty=false){
-    std::cout<<"Wrong2 Sytematics const called\n";
+  Systematics2D(TH2D* m, bool empty=false){
     mean_syst = m;
     if(empty) mean_syst->Reset();
   }
 */
-  Systematics(std::vector<TH1D*> u){
+  Systematics2D(std::vector<TH2D*> u){
     universes = u;
-    mean_syst = (TH1D*)universes[0]->Clone();
+    mean_syst = (TH2D*)universes[0]->Clone();
     Calculate();
   }
 
-  Systematics(TString name, std::vector<TH1D*> u, TH1D* mean){
-    sname = name;
-    universes = u;
-    mean_syst = mean;
+  Systematics* Slice(size_t i){
+    int bin = i;
+    std::vector<TH1D*> uni_s;
+    for(size_t u = 0; u < universes.size(); u++){
+      uni_s.push_back(universes[u]->ProjectionX(Form("_px%i",bin), bin, bin));
+    }
+    TH1D* mean_s = mean_syst->ProjectionX(Form("_px%i", bin), bin, bin);
+    Systematics* syst_s = new Systematics(sname, uni_s, mean_s);
+    return syst_s;
   }
 
   void CreateUniverses(size_t nuni){
     universes.clear();
     for(size_t i = 0; i < nuni; i++){
-      TH1D* uni = (TH1D*) mean_syst->Clone(Form(sname+"_systuni%i",(int)i));
+      TH2D* uni = (TH2D*) mean_syst->Clone(Form(sname+"_systuni%i",(int)i));
       uni->Reset();
       universes.push_back(uni);
     }
@@ -70,42 +74,49 @@ class Systematics
   void Calculate(){
     //universes = u;
 
-    //mean_syst = (TH1D*)universes[0]->Clone();
+    //mean_syst = (TH2D*)universes[0]->Clone();
     mean_syst->Reset();
 
     // Calculate the mean and standard deviation for each bin over all universes
     std::vector<double> means;
-    for(size_t n = 1; n <= universes[0]->GetNbinsX(); n++){
-      double mean = 0;
-      for(size_t ns = 0; ns < universes.size(); ns++){
-        mean += universes[ns]->GetBinContent(n);
+    for(size_t x = 1; x <= mean_syst->GetNbinsX(); x++){
+      for(size_t y = 1; y <= mean_syst->GetNbinsY(); y++){
+        double mean = 0;
+        for(size_t ns = 0; ns < universes.size(); ns++){
+          mean += universes[ns]->GetBinContent(x, y);
+        }
+        mean /= universes.size();
+        means.push_back(mean);
+        double std_dev = 0;
+        for(size_t ns = 0; ns < universes.size(); ns++){
+          std_dev += std::pow(universes[ns]->GetBinContent(x, y) - mean, 2.);
+        }
+        std_dev = std::sqrt(std_dev/(universes.size()-1));
+        mean_syst->SetBinContent(x, y, mean);
+        mean_syst->SetBinError(x, y, std_dev);
       }
-      mean /= universes.size();
-      means.push_back(mean);
-      double std_dev = 0;
-      for(size_t ns = 0; ns < universes.size(); ns++){
-        std_dev += std::pow(universes[ns]->GetBinContent(n) - mean, 2.);
-      }
-      std_dev = std::sqrt(std_dev/(universes.size()-1));
-      mean_syst->SetBinContent(n, mean);
-      mean_syst->SetBinError(n, std_dev);
     }
 
-    size_t nbins = mean_syst->GetNbinsX();
+    size_t nxbins = mean_syst->GetNbinsX();
+    size_t nybins = mean_syst->GetNbinsY();
+    size_t nbins = nxbins*nybins;
     //TString name = mean_syst->GetName();
 
     // Calculate the covariance and correlation over all universes
     /*covariance = new TH2D(name+"_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
     frac_covariance = new TH2D(name+"_frac_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
     correlation = new TH2D(name+"_correlation", "", nbins, 1, nbins+1, nbins, 1, nbins+1);*/
-    
-    for(size_t i = 1; i <= universes[0]->GetNbinsX(); i++){
+    for(size_t i = 1; i <= nbins; i++){
       double cv_i = means[i-1];
-      for(size_t j = 1; j <= universes[0]->GetNbinsX(); j++){
+      size_t i_x = ceil((double)i/nybins); // number of multiples of y
+      size_t i_y = i - nybins*(i_x-1);
+      for(size_t j = 1; j <= nbins; j++){
         double cv_j = means[j-1];
+        size_t j_x = ceil((double)j/nybins);
+        size_t j_y = j - nybins*(j_x-1);
         double E_ij = 0;
         for(size_t ns = 0; ns < universes.size(); ns++){
-          E_ij += (universes[ns]->GetBinContent(i)-cv_i)*(universes[ns]->GetBinContent(j)-cv_j);
+          E_ij += (universes[ns]->GetBinContent(i_x, i_y)-cv_i)*(universes[ns]->GetBinContent(j_x, j_y)-cv_j);
         }
         E_ij /= universes.size();
         covariance->SetBinContent(i, j, E_ij);
@@ -113,13 +124,12 @@ class Systematics
       }
     }
 
-    for(size_t i = 1; i <= universes[0]->GetNbinsX(); i++){
-      for(size_t j = 1; j <= universes[0]->GetNbinsX(); j++){
+    for(size_t i = 1; i <= nbins; i++){
+      for(size_t j = 1; j <= nbins; j++){
         double corr_bin = covariance->GetBinContent(i, j)/(std::sqrt(covariance->GetBinContent(i,i))*std::sqrt(covariance->GetBinContent(j,j)));
         correlation->SetBinContent(i, j, corr_bin);
       }
     }
-    
   }
 
 };

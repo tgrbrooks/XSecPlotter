@@ -17,6 +17,16 @@ class SystSummary
 
   SystSummary(){}
 
+  SystSummary(TH1D* hist){
+    genie = new Systematics(hist, "_geniesyst");
+    flux = new Systematics(hist, "_fluxsyst");
+    detector = new Systematics(hist, "_detsyst");
+    background = new Systematics(hist, "_bkgsyst");
+    constant = new Systematics(hist, "_constsyst");
+    total = (TH1D*)hist->Clone(TString(hist->GetName())+"_totalsyst");
+    total->Reset();
+  }
+
   SystSummary(Systematics *g, Systematics *f, Systematics *d, Systematics *b, Systematics *c)
   {
     genie = g;
@@ -27,14 +37,20 @@ class SystSummary
 
     total = (TH1D*)genie->mean_syst->Clone();
     total->Reset();
-    for(auto const& syst : config->systematics){
-      if(syst == "genie") AddErrors(total, genie->mean_syst);
-      if(syst == "flux") AddErrors(total, flux->mean_syst);
-      if(syst == "detector") AddErrors(total, detector->mean_syst);
-      if(syst == "background") AddErrors(total, background->mean_syst);
-      if(syst == "constant") AddErrors(total, constant->mean_syst);
-    }
+    AddErrors(total, genie->mean_syst);
+    AddErrors(total, flux->mean_syst);
+    AddErrors(total, detector->mean_syst);
+    AddErrors(total, background->mean_syst);
+    AddErrors(total, constant->mean_syst);
 
+  }
+
+  void GetTotal(){
+    AddErrors(total, genie->mean_syst);
+    AddErrors(total, flux->mean_syst);
+    AddErrors(total, detector->mean_syst);
+    AddErrors(total, background->mean_syst);
+    AddErrors(total, constant->mean_syst);
   }
 
   // Add histogram errors in quadrature, ignoring bin contents

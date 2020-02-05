@@ -264,8 +264,11 @@ class DataManager
       if(*true_nu_pdg == 14 && *true_cc) nu_string = "#nu_{#mu} CC";
       if(*true_nu_pdg == 14 && !*true_cc) nu_string = "#nu_{#mu} NC";
 
-      if(std::find(true_variables.begin(), true_variables.end(), -99999) != true_variables.end()){ 
+      if(std::find(variables.begin(), variables.end(), -99999) != variables.end()){ 
         selected = false;
+      }
+
+      if(std::find(true_variables.begin(), true_variables.end(), -99999) != true_variables.end()){ 
         true_selected = false;
       }
       

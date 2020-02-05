@@ -85,20 +85,21 @@ void MultiPlots(){
 
   // Make every possible histogram
   std::cout<<"Creating all of the histograms...\n";
-  HistManager *histman = new HistManager(config, datamans[0], binman, 0);
+  HistManager *histman = new HistManager(config, titles, datamans[0], binman, 0);
   std::cout<<"...Finished.\n";
 
   // Calculate systematics and associate to histograms
-  std::cout<<"Calculating the systematics...\n";
-  SystCalculator(config, histman, datamans[0], 0);
-  std::cout<<"...Finished.\n";
-
+  if(config->show_syst_error){
+    std::cout<<"Calculating the systematics...\n";
+    SystCalculator(config, histman, datamans[0], 0);
+    std::cout<<"...Finished.\n";
+  }
   
   // Calculate how many 1D histograms the choice of variables and binning would produce
   int n_hists = histman->GetNHists();
   // Ask user if they want to make that many histograms
   std::string response = "y";
-  if(n_hists>10){
+  if(n_hists>20){
     std::cout<<"This will produce "<<n_hists<<" histograms, continue (y/n)? ";
     std::cin>>response;
   }
@@ -107,15 +108,22 @@ void MultiPlots(){
   // Initialise the plotter
   std::cout<<"Making the plots...\n";
   Plotter *plotter = new Plotter(config, titles);
+  // Print summary
+  // Plot all the 1D plots
   for(size_t i = 0; i < config->plot_variables.size(); i++){
     if(!config->show_plots[i]) continue;
-    if(config->show_stat_error) plotter->Plot1DWithErrors(histman->GetHisto1D(config->plot_variables[i]), i);
-    else plotter->Plot1D(histman->GetHisto1D(config->plot_variables[i]), i);
-    if(config->plot_eff_pur && config->stage == "reco"){
-      plotter->PlotEffPur(histman->GetHisto1D(config->plot_variables[i]), i);
-    }
+    plotter->All1DPlots(histman->GetHisto1D(config->plot_variables[i]), i);
     if(config->plot_correlation){
       plotter->PlotAllSysts(histman->GetHisto1D(config->plot_variables[i]));
+    }
+  }
+  // Only plot slices in the second variable
+  if(config->plot_variables.size() == 2){
+    std::pair<TString, TString> key = std::make_pair(config->plot_variables[0], config->plot_variables[1]);
+    plotter->Plot2DHisto(histman->GetHisto2D(config->plot_variables[0], config->plot_variables[1]), 0, 1);
+    plotter->Plot2DSlices(histman->GetHisto2D(config->plot_variables[0], config->plot_variables[1]), 0, 1);
+    if(config->plot_correlation){
+      plotter->PlotAllSysts(histman->GetHisto2D(config->plot_variables[0], config->plot_variables[1]));
     }
   }
   std::cout<<"...Finished.\n";

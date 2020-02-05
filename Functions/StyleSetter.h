@@ -42,6 +42,9 @@ void SetStyle(){
   // Legend
   gStyle->SetLegendBorderSize(0);
   gStyle->SetLegendFillColor(0);
+  // put tick marks on top and RHS of plots
+  gStyle->SetPadTickX(1);
+  gStyle->SetPadTickY(1);
 
 }
 

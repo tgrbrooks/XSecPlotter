@@ -14,7 +14,7 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_flux2.root
+InputFile: Trees/xsectree_flux.root
 
 // Name of model/tune in input file (1 per input file)
 TuneName: GENIEv3
@@ -70,7 +70,7 @@ InteractionType: -1
 //- true (selection and kinematic variables all in truth)
 //- smeareff (Applies efficiency and smears plotting variables only)
 //- reco (Efficiency + smearing + PID + selection) TODO: only for numuCC
-Stage: true
+Stage: reco
 
 // Variable to plot in
 // Bools
@@ -112,7 +112,7 @@ PotScale: -1
 PlotStacked: false
 
 // Stack in true FSI (fsi), true interaction (int), or neutrino type (nu)
-StackBy: fsi
+StackBy: int
 
 // Minimum bin (-1 for min tree value)
 MinValue: 0
@@ -139,7 +139,7 @@ PlotFilled: false
 //                         Choose plot options
 //------------------------------------------------------------------------
 // Show selection information (true)
-ShowInfo: true
+ShowInfo: false
 
 // Show percentage statistical error (true)
 ShowStatError: false
@@ -148,10 +148,10 @@ ShowStatError: false
 ShowSystError: true
 
 // List of systematics to include (genie, flux, detector, background, constant)
-Systematics: genie, flux, detector, background, constant
+Systematics: detector
 
 // Value of constant percentage systematic error (0->1)
-ConstantSyst: 0.02
+ConstantSyst: 0.027
 
 // Show error bars on histograms (true)
 ShowErrorBars: true

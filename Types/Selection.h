@@ -3,13 +3,14 @@
 
 #include "Configuration.h"
 
-// Structure for holding interaction information
+// Class for doing numuCC selection on tree data
 class Selection
 {
   public:
 
   Configuration *config;
 
+  // Constructor
   Selection(Configuration *c)
   {
     config = c;
@@ -19,28 +20,37 @@ class Selection
   bool IsSelected(int nu_pdg, bool cc, bool lep_contained, bool particles_contained, int n_pr, int n_pipm, int n_pi0, int int_type){
     bool selected = true;
 
+    // Neutrino PDG code
     if (std::find(config->nu_pdg.begin(), config->nu_pdg.end(), nu_pdg) == config->nu_pdg.end())
       selected = false;
+    // Charged current or neutral current
     if (std::find(config->is_cc.begin(), config->is_cc.end(), cc) == config->is_cc.end())
       selected = false;
+    // Lepton contained or exiting
     if (std::find(config->contained_lepton.begin(), config->contained_lepton.end(), lep_contained) == config->contained_lepton.end())
       selected = false;
+    // Other particles contained or exiting
     if (std::find(config->contained_particles.begin(), config->contained_particles.end(), particles_contained) == config->contained_particles.end())
       selected = false;
+    // If selecting by final state interaction products
     if (config->plot_by_fsi){
+      // Number of protons
       if (std::find(config->num_protons.begin(), config->num_protons.end(), -1) == config->num_protons.end()){
         if (std::find(config->num_protons.begin(), config->num_protons.end(), n_pr) == config->num_protons.end())
           selected = false;
       }
+      // Number of charged pions
       if (std::find(config->num_pipm.begin(), config->num_pipm.end(), -1) == config->num_pipm.end()){
         if (std::find(config->num_pipm.begin(), config->num_pipm.end(), n_pipm) == config->num_pipm.end())
           selected = false;
       }
+      // Number of neutral pions
       if (std::find(config->num_pi0.begin(), config->num_pi0.end(), -1) == config->num_pi0.end()){
         if (std::find(config->num_pi0.begin(), config->num_pi0.end(), n_pi0) == config->num_pi0.end())
           selected = false;
       }
     }
+    // If selecting by true interaction type
     else{
       if (std::find(config->interaction_type.begin(), config->interaction_type.end(), -1) == config->interaction_type.end()){
         if (std::find(config->interaction_type.begin(), config->interaction_type.end(), int_type) == config->interaction_type.end())

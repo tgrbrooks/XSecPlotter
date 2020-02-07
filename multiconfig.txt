@@ -14,15 +14,10 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_flux.root
+InputFile: Trees/xsectree_geniev2rwt.root, Trees/xsectree_geniev3rwt.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv3
-
-// Path to interaction and metadata trees
-TreePath: XSecTree/interaction
-MetaDataPath: XSecTree/metadata
-WeightPath: XSecTree/weight
+TuneName: GENIEv2_, GENIEv3_
 
 // Name of output file (.root for modifiable canvas)
 OutputFile: test/new.png
@@ -70,7 +65,7 @@ InteractionType: -1
 //- true (selection and kinematic variables all in truth)
 //- smeareff (Applies efficiency and smears plotting variables only)
 //- reco (Efficiency + smearing + PID + selection) TODO: only for numuCC
-Stage: reco
+Stage: true
 
 // Variable to plot in
 // Bools
@@ -100,7 +95,7 @@ Stage: reco
 PlotVariable: lep_mom
 
 // Save the plots for each variable
-ShowPlots: true
+PlotSlices: false
 
 // Scale to a certain POT (-1 for no scaling) (6.6e20 is nominal)
 PotScale: -1
@@ -145,7 +140,7 @@ ShowInfo: false
 ShowStatError: false
 
 // Show systematic error (true)
-ShowSystError: true
+ShowSystError: false
 
 // List of systematics to include (genie, flux, detector, background, constant)
 Systematics: flux
@@ -157,16 +152,13 @@ ConstantSyst: 0.027
 ShowErrorBars: true
 
 // Produce covariance and correlation matrices for systematic errors (true)
-PlotCorrelation: true
+PlotCorrelation: false
 
 // Plot all of the different universes for systematic uncertainties
-PlotUniverses: true
+PlotUniverses: false
 
 // Produce efficiency and purity plots (true)
 PlotEffPur: false
 
-// Produce response matrix (true) TODO
+// Produce response matrix (true)
 PlotResponse: false
-
-// Unfold into a cross section measurement (true) TODO
-Unfold: false

@@ -35,11 +35,9 @@
 #include "Types/Configuration.h"
 #include "Types/Titles.h"
 #include "Types/BinManager.h"
-#include "Types/PlotManager.h"
 #include "Types/Plotter.h"
 #include "Types/HistManager.h"
 #include "Types/DataManager.h"
-#include "Types/SystManager.h"
 #include "Types/SystCalculator.h"
 #include "Types/Interaction.h"
 #include "Types/Selection.h"
@@ -85,18 +83,24 @@ void MultiPlots(){
 
   // Make every possible histogram
   std::cout<<"Creating all of the histograms...\n";
-  HistManager *histman = new HistManager(config, titles, datamans[0], binman, 0);
+  std::vector<HistManager*> histmans;
+  for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
+    HistManager *histman = new HistManager(config, titles, datamans[file_i], binman, file_i);
+    histmans.push_back(histman);
+  }
   std::cout<<"...Finished.\n";
 
   // Calculate systematics and associate to histograms
   if(config->show_syst_error){
     std::cout<<"Calculating the systematics...\n";
-    SystCalculator(config, histman, datamans[0], 0);
+    for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
+      SystCalculator(config, histmans[file_i], datamans[file_i], file_i);
+    }
     std::cout<<"...Finished.\n";
   }
   
   // Calculate how many 1D histograms the choice of variables and binning would produce
-  int n_hists = histman->GetNHists();
+  int n_hists = histmans[0]->GetNHists();
   // Ask user if they want to make that many histograms
   std::string response = "y";
   if(n_hists>20){
@@ -111,19 +115,29 @@ void MultiPlots(){
   // Print summary
   // Plot all the 1D plots
   for(size_t i = 0; i < config->plot_variables.size(); i++){
-    if(!config->show_plots[i]) continue;
-    plotter->All1DPlots(histman->GetHisto1D(config->plot_variables[i]), i);
-    if(config->plot_correlation){
-      plotter->PlotAllSysts(histman->GetHisto1D(config->plot_variables[i]));
+    std::vector<Histo1D*> histos_1D;
+    for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
+      histos_1D.push_back(histmans[i]->GetHisto1D(i);
+    }
+    plotter->All1DPlots(histmans[0]->GetHisto1D(i), i);
+    if(config->plot_correlation && config->show_syst_error){
+      plotter->PlotAllSysts(histmans[0]->GetHisto1D(i));
+    }
+    if(config->plot_response){
+      plotter->PlotResponse(histmans[0]->GetHisto1D(i)->response);
     }
   }
   // Only plot slices in the second variable
   if(config->plot_variables.size() == 2){
-    std::pair<TString, TString> key = std::make_pair(config->plot_variables[0], config->plot_variables[1]);
-    plotter->Plot2DHisto(histman->GetHisto2D(config->plot_variables[0], config->plot_variables[1]), 0, 1);
-    plotter->Plot2DSlices(histman->GetHisto2D(config->plot_variables[0], config->plot_variables[1]), 0, 1);
-    if(config->plot_correlation){
-      plotter->PlotAllSysts(histman->GetHisto2D(config->plot_variables[0], config->plot_variables[1]));
+    plotter->Plot2DHisto(histmans[0]->GetHisto2D(0, 1), 0, 1);
+    if(config->plot_slices){
+      plotter->Plot2DSlices(histmans[0]->GetHisto2D(0, 1), 0, 1);
+    }
+    if(config->plot_correlation && config->show_syst_error){
+      plotter->PlotAllSysts(histmans[0]->GetHisto2D(0, 1));
+    }
+    if(config->plot_response){
+      plotter->PlotResponse(histmans[0]->GetHisto2D(0, 1)->response);
     }
   }
   std::cout<<"...Finished.\n";

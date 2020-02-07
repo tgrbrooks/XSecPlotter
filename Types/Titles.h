@@ -22,6 +22,8 @@ class Titles
   TString pot;
   TString mass;
 
+  // Constructor
+  /*
   Titles(std::vector<TString> ht, std::vector<TString> n, std::vector<TString> u, TString dt, TString pc, TString lc, 
         TString ic, TString npr, TString npi, TString npi0, TString it, TString p, TString m)
   {
@@ -38,10 +40,11 @@ class Titles
     int_type = it;
     pot = p;
     mass = m;
-  }
+  }*/
 
-  Titles(){}
+  //Titles(){}
 
+  // Constructor
   Titles(Configuration *config)
   {
     // Set the units and histogram titles based on plotting variable
@@ -159,7 +162,6 @@ class Titles
         exit(1);
       }
 
-      // TODO remove units
       if(apply_cos){
         names[index] = "cos "+ names[index];
         units[index] = "";

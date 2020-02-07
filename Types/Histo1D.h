@@ -16,8 +16,10 @@ class Histo1D
   TLegend* legend;
   std::pair<TH1D*, TH1D*> efficiency;
   std::pair<TH1D*, TH1D*> purity;
+  TH2D* response;
   SystSummary* systematics;
 
+  // Constructor (used for total data)
   Histo1D(TH1D* hist)
   {
     total_hist = hist;
@@ -39,6 +41,7 @@ class Histo1D
     systematics = new SystSummary(total_hist);
   }
 
+  // Constructor (used for normal 1D histograms)
   Histo1D(TH1D* hist, std::pair<THStack*, TLegend*> stack1D)
   {
     total_hist = hist;
@@ -59,10 +62,14 @@ class Histo1D
     TH1D *pur_denom = (TH1D*) empty->Clone(name+"_purden");
     purity = std::make_pair(pur_numerator, pur_denom);
 
+    int nbins = total_hist->GetNbinsX();
+    response = new TH2D(name+"_response", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
+
     // Initialise empty systematics
     systematics = new SystSummary(empty);
   }
 
+  // Constructor (used for 1D slices of 2D histograms)
   Histo1D(TH1D* hist, std::pair<THStack*, TLegend*> stack1D, std::pair<TH1D*, TH1D*> eff, std::pair<TH1D*, TH1D*> pur, SystSummary *syst)
   {
     total_hist = hist;
@@ -92,11 +99,13 @@ class Histo1D
 
   }
 
+  // Set the efficiency and purity
   void SetEfficiency(std::pair<TH1D*, TH1D*> eff, std::pair<TH1D*, TH1D*> pur){
     efficiency = eff;
     purity = pur;
   }
 
+  // Print error summary for total data
   void PrintSummary(){
     double total = total_hist->GetBinContent(1);
     double stat_e = total_hist->GetBinError(1);
@@ -105,7 +114,7 @@ class Histo1D
     double det_e = systematics->detector->mean_syst->GetBinError(1);
     double bkg_e = systematics->background->mean_syst->GetBinError(1);
     double const_e = systematics->constant->mean_syst->GetBinError(1);
-    double syst_e = systematics->total->GetBinError(1);
+    double syst_e = systematics->total->mean_syst->GetBinError(1);
     double tot_e = std::sqrt(pow(syst_e, 2)+pow(stat_e, 2));
     std::cout<<"Total = "<<total<<"\n"
              <<"-------------------------------------------------\n"

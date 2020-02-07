@@ -19,8 +19,9 @@ class DataManager
   std::vector<std::vector<double>> total_data;
   std::vector<bool> data_used;
 
-  DataManager(){}
+  //DataManager(){}
 
+  // Constructor
   DataManager(Configuration *c, size_t f)
   {
     config = c;
@@ -67,7 +68,7 @@ class DataManager
     Selection sel(config);
 
     //Read in TTree
-    TTreeReader tree_reader(config->tree_path, &data_file);
+    TTreeReader tree_reader("XSecTree/interaction", &data_file);
 
     // True vertex
     TTreeReaderValue<double>       vtx_x(tree_reader, "vtx_x");

@@ -7,8 +7,9 @@
 #include "Systematics.h"
 #include "Histo1D.h"
 #include "Histo2D.h"
+#include "HistManager.h"
 
-// Structure for holding interaction information
+// Class for handling all plotting
 class Plotter
 {
   public:
@@ -16,8 +17,9 @@ class Plotter
   Configuration *config;
   Titles *titles;
 
-  Plotter(){}
+  //Plotter(){}
 
+  // Constructor
   Plotter(Configuration *c, Titles *t)
   {
     config = c;
@@ -68,13 +70,14 @@ class Plotter
 
   }
 
+  // Create all 1D plots defined by configuration
   void All1DPlots(Histo1D* histo, size_t var_i){
     if(config->show_stat_error) Plot1DWithErrors(histo, var_i);
     else Plot1D(histo, var_i);
     if(config->plot_eff_pur && config->stage == "reco"){
       PlotEffPur(histo, var_i);
     }
-    if(config->plot_universes){
+    if(config->plot_universes && config->show_syst_error){
       PlotUniverses(histo, var_i);
     }
   }
@@ -111,8 +114,8 @@ class Plotter
     TH1D* error_hist = (TH1D*)histo->total_hist->Clone();
     if(config->show_error_bars){
       if(config->show_syst_error){
-        for(size_t n = 0; n <= histo->systematics->total->GetNbinsX(); n++){
-          error_hist->SetBinError(n, std::sqrt(std::pow(histo->systematics->total->GetBinError(n), 2)
+        for(size_t n = 0; n <= error_hist->GetNbinsX(); n++){
+          error_hist->SetBinError(n, std::sqrt(std::pow(histo->systematics->total->mean_syst->GetBinError(n), 2)
                                             +std::pow(error_hist->GetBinError(n), 2)));
         }
       }
@@ -233,7 +236,7 @@ class Plotter
     if(config->show_error_bars){
       if(config->show_syst_error){
         for(size_t n = 0; n <= error_hist->GetNbinsX(); n++){
-          error_hist->SetBinError(n, std::sqrt(std::pow(histo->systematics->total->GetBinError(n), 2)
+          error_hist->SetBinError(n, std::sqrt(std::pow(histo->systematics->total->mean_syst->GetBinError(n), 2)
                                             +std::pow(error_hist->GetBinError(n), 2)));
         }
       }
@@ -455,14 +458,8 @@ class Plotter
 
   }
 
-  void PlotAllSysts(Histo1D* histo){
-    for(auto const& syst : config->systematics){
-      if(syst=="genie") PlotSyst(histo->systematics->genie);
-      if(syst=="flux") PlotSyst(histo->systematics->flux);
-      if(syst=="detector") PlotSyst(histo->systematics->detector);
-    }
-  }
 
+  // Plot 1D universe variations where appropriate
   void PlotUniverses(Histo1D* histo, size_t var_i){
     for(auto const& syst : config->systematics){
       if(syst=="genie") PlotUni(histo->total_hist, histo->systematics->genie->universes, var_i);
@@ -471,11 +468,12 @@ class Plotter
     }
   }
 
-  // Plot a 1D stacked hist
+  // Plot a 1D hist with multiple universes drawn in background
   void PlotUni(TH1D* hist, std::vector<TH1D*> unis, size_t var_i){
 
     // Create the canvas
     TString name = unis[0]->GetName();
+    name.ReplaceAll("_uni0","");
     TCanvas *canvas = new TCanvas("canvas"+name+"_unis", "canvas");
 
     // Split the pad for histogram and error plot
@@ -491,7 +489,6 @@ class Plotter
     hist->Draw("HIST");
 
     double ymax = 0;
-    std::cout<<"number of unis = "<<unis.size()<<"\n";
     for(size_t i = 0; i < unis.size(); i++){
       unis[i]->SetFillStyle(0);
       unis[i]->SetLineWidth(1);
@@ -547,26 +544,90 @@ class Plotter
     canvas->SaveAs(output_file);
   }
 
+  
+  // Plot systematic matrices where appropriate
+  void PlotAllSysts(Histo1D* histo){
+    for(auto const& syst : config->systematics){
+      PlotSyst(histo->systematics->GetSyst(syst));
+    }
+    PlotSyst(histo->systematics->total);
+  }
+
+  // Plot covariance, fractional covariance and correlation matrices
   void PlotSyst(Systematics* syst){
     Plot2D(syst->covariance, syst->covariance->GetName(), "Bin i", "Bin j");
     Plot2D(syst->frac_covariance, syst->frac_covariance->GetName(), "Bin i", "Bin j");
     Plot2D(syst->correlation, syst->correlation->GetName(), "Bin i", "Bin j");
   }
 
+  // Plot systematic matrices where appropriate for 2D histograms
   void PlotAllSysts(Histo2D* histo){
     for(auto const& syst : config->systematics){
-      if(syst=="genie") PlotSyst(histo->systematics->genie);
-      if(syst=="flux") PlotSyst(histo->systematics->flux);
-      if(syst=="detector") PlotSyst(histo->systematics->detector);
+      PlotSyst(histo->systematics->GetSyst(syst));
     }
+    PlotSyst(histo->systematics->total);
   }
 
+  // Plot covariance, fractional covariance and correlation matrices for 2D histograms
   void PlotSyst(Systematics2D* syst){
     Plot2D(syst->covariance, syst->covariance->GetName(), "Bin i", "Bin j");
     Plot2D(syst->frac_covariance, syst->frac_covariance->GetName(), "Bin i", "Bin j");
     Plot2D(syst->correlation, syst->correlation->GetName(), "Bin i", "Bin j");
   }
 
+  // Plot systematic matrices where appropriate
+  void PlotResponse(TH2D* response){
+
+    TString name = response->GetName();
+    TCanvas *canvas = new TCanvas(name, "", 900, 600);
+    bool show_text = false;
+    if(response->GetNbinsX() <= 10 && response->GetNbinsY() <= 10) show_text = true;
+    if(!show_text) canvas->SetRightMargin(0.12);
+    canvas->SetFrameLineWidth(4.);
+    canvas->SetLineWidth(4.);
+    canvas->SetTickx();
+    canvas->SetTicky();
+    canvas->SetBottomMargin(0.16);
+    canvas->SetLeftMargin(0.16);
+    canvas->SetRightMargin(0.16);
+
+    response->GetXaxis()->SetTitle("True bin i");
+    response->GetYaxis()->SetTitle("Reco bin j");
+    gStyle->SetPaintTextFormat("4.2f");
+    response->SetMarkerSize(1.5);
+    response->SetMarkerColor(10);
+    response->GetXaxis()->SetNdivisions(110);
+    response->GetXaxis()->SetTitleOffset(1.1);
+    response->GetXaxis()->SetTickLength(0.04);
+    response->GetXaxis()->SetTitleSize(1.1*response->GetXaxis()->GetTitleSize());
+    response->GetXaxis()->CenterLabels();
+    response->GetYaxis()->SetNdivisions(110);
+    response->GetYaxis()->SetTitleOffset(0.95);
+    response->GetYaxis()->SetTickLength(0.015);
+    response->GetYaxis()->SetTitleSize(1.1*response->GetYaxis()->GetTitleSize());
+    response->GetYaxis()->CenterLabels();
+    /*
+    bool overflow = false;
+    if(overflow){
+      for(size_t i = 1; i <= response->GetNbinsX(); i++){
+        response->GetXaxis()->SetBinLabel(i, std::to_string(i).c_str());
+        if(i==response->GetNbinsX()) response->GetXaxis()->SetBinLabel(i, "OF");
+      }   
+      for(size_t i = 1; i <= response->GetNbinsY(); i++){
+        response->GetYaxis()->SetBinLabel(i, std::to_string(i).c_str());
+        if(i==response->GetNbinsY()) response->GetYaxis()->SetBinLabel(i, "OF");
+      }   
+    }
+    */
+    if(show_text) response->Draw("COL TEXT");
+    else response->Draw("COLZ");
+
+    TString output_file = config->output_file;
+    output_file.ReplaceAll(".","_"+name+".");
+    canvas->SaveAs(output_file);
+  }
+
+  // Plot all slices in Y bins
   void Plot2DSlices(Histo2D* histo, size_t var_i, size_t var_j){
     // Loop over all bins in the second variable
     for(size_t j = 1; j <= histo->total_hist->GetNbinsY(); j++){
@@ -575,10 +636,13 @@ class Plotter
     }
   }
 
+  // Plot 2D histogram with correct axis labels
   void Plot2DHisto(Histo2D* histo, size_t var_i, size_t var_j){
     TString name = config->plot_variables[var_i]+"_"+config->plot_variables[var_j]+"2D";
     TString xaxis = titles->names[var_i]+" ["+titles->units[var_i]+"]";
+    if(titles->units[var_i]=="") xaxis = titles->names[var_i];
     TString yaxis = titles->names[var_j]+" ["+titles->units[var_j]+"]";
+    if(titles->units[var_j]=="") yaxis = titles->names[var_j];
     Plot2D(histo->total_hist, name, xaxis, yaxis);
   }
 
@@ -613,7 +677,6 @@ class Plotter
     output_file.ReplaceAll(".","_"+name+".");
     canvas->SaveAs(output_file);
   }
-
 
   
 };

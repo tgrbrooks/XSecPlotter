@@ -1,7 +1,7 @@
 #ifndef SYSTEMATICS_H
 #define SYSTEMATICS_H
 
-// Structure for holding systematic error information
+// Structure for holding 1D systematic error information
 class Systematics
 {
   public:
@@ -13,9 +13,7 @@ class Systematics
   TH2D* frac_covariance;
   TH2D* correlation;
 
-  Systematics(){
-  }
-
+  // Constructor (default)
   Systematics(TH1D* hist, TString name){
     mean_syst = (TH1D*)hist->Clone(TString(hist->GetName())+name);
     sname = TString(mean_syst->GetName());
@@ -25,34 +23,25 @@ class Systematics
     frac_covariance = new TH2D(sname+"_frac_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
     correlation = new TH2D(sname+"_correlation", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
   }
-/*
-  Systematics(TH1D* m, bool empty=false){
-    std::cout<<"Wrong2 Sytematics const called\n";
-    mean_syst = m;
-    if(empty) mean_syst->Reset();
-  }
-*/
-  Systematics(std::vector<TH1D*> u){
-    universes = u;
-    mean_syst = (TH1D*)universes[0]->Clone();
-    Calculate();
-  }
 
+  // Constructor (for creating 1D slice)
   Systematics(TString name, std::vector<TH1D*> u, TH1D* mean){
     sname = name;
     universes = u;
     mean_syst = mean;
   }
 
+  // Create empty histograms for universe variations
   void CreateUniverses(size_t nuni){
     universes.clear();
     for(size_t i = 0; i < nuni; i++){
-      TH1D* uni = (TH1D*) mean_syst->Clone(Form(sname+"_systuni%i",(int)i));
+      TH1D* uni = (TH1D*) mean_syst->Clone(Form(sname+"_uni%i",(int)i));
       uni->Reset();
       universes.push_back(uni);
     }
   }
 
+  // Scale univereses by appropriate factor
   void ScaleUniverses(Configuration* config, size_t file_i){
     double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
 
@@ -67,10 +56,25 @@ class Systematics
     }
   }
 
+  // Calculate mean, covariance and correlation from universe variations
   void Calculate(){
-    //universes = u;
 
-    //mean_syst = (TH1D*)universes[0]->Clone();
+    size_t nbins = mean_syst->GetNbinsX();
+
+    // For constant errors covariance is just diagonal variance matrix
+    if(universes.size()==0){
+      for(size_t i = 1; i <= nbins; i++){
+        for(size_t j = 1; j <= nbins; j++){
+          if(i==j){ 
+            covariance->SetBinContent(i, j, pow(mean_syst->GetBinError(i),2));
+            frac_covariance->SetBinContent(i, j, pow(mean_syst->GetBinError(i),2)/pow(mean_syst->GetBinContent(i),2));
+            correlation->SetBinContent(i, j, 1.);
+          }
+        }
+      }
+      return;
+    }
+
     mean_syst->Reset();
 
     // Calculate the mean and standard deviation for each bin over all universes
@@ -91,17 +95,10 @@ class Systematics
       mean_syst->SetBinError(n, std_dev);
     }
 
-    size_t nbins = mean_syst->GetNbinsX();
-    //TString name = mean_syst->GetName();
-
     // Calculate the covariance and correlation over all universes
-    /*covariance = new TH2D(name+"_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
-    frac_covariance = new TH2D(name+"_frac_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
-    correlation = new TH2D(name+"_correlation", "", nbins, 1, nbins+1, nbins, 1, nbins+1);*/
-    
-    for(size_t i = 1; i <= universes[0]->GetNbinsX(); i++){
+    for(size_t i = 1; i <= nbins; i++){
       double cv_i = means[i-1];
-      for(size_t j = 1; j <= universes[0]->GetNbinsX(); j++){
+      for(size_t j = 1; j <= nbins; j++){
         double cv_j = means[j-1];
         double E_ij = 0;
         for(size_t ns = 0; ns < universes.size(); ns++){
@@ -113,8 +110,8 @@ class Systematics
       }
     }
 
-    for(size_t i = 1; i <= universes[0]->GetNbinsX(); i++){
-      for(size_t j = 1; j <= universes[0]->GetNbinsX(); j++){
+    for(size_t i = 1; i <= nbins; i++){
+      for(size_t j = 1; j <= nbins; j++){
         double corr_bin = covariance->GetBinContent(i, j)/(std::sqrt(covariance->GetBinContent(i,i))*std::sqrt(covariance->GetBinContent(j,j)));
         correlation->SetBinContent(i, j, corr_bin);
       }

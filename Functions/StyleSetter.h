@@ -1,6 +1,8 @@
 // Set some global style configurations here
 void SetStyle(){
 
+  gStyle->Reset();
+
   Int_t font = 62;
   Double_t font_size = 0.06;
   Double_t line_width = 3.;

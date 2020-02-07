@@ -4,7 +4,7 @@
 #include "Configuration.h"
 #include "DataManager.h"
 
-// Structure for holding interaction information
+// Structure for holding binning information
 class BinManager
 {
   public:
@@ -18,8 +18,9 @@ class BinManager
   // 2D binning - X and Y bins
   std::map<std::pair<TString, TString>, std::pair<std::vector<double>, std::vector<double>>> bin_edges_2D;
 
-  BinManager(){}
+  //BinManager(){}
 
+  // Constructor
   BinManager(Configuration *c, DataManager *d)
   {
     config = c;
@@ -37,6 +38,7 @@ class BinManager
 
   }
 
+  // Accessor to 1D binning information
   std::vector<double> Get1DBinning(TString plot_var){
     std::vector<double> null;
     if(bin_edges_1D.find(plot_var) == bin_edges_1D.end()){
@@ -46,6 +48,7 @@ class BinManager
     return bin_edges_1D[plot_var];
   }
 
+  // Accessor to 2D binning information
   std::pair<std::vector<double>, std::vector<double>> Get2DBinning(TString plot_var1, TString plot_var2){
     std::vector<double> null;
     std::pair<TString, TString> key = std::make_pair(plot_var1, plot_var2);
@@ -340,6 +343,7 @@ class BinManager
 
   }
 
+  // Rebin in 2D assuming new edges have corresponding edges in the old histogram
   void Rebin2D(TH2D* hist, std::vector<double> xbin_edges, std::vector<double> ybin_edges){
     double xedges_array[xbin_edges.size()];
     std::copy(xbin_edges.begin(), xbin_edges.end(), xedges_array);

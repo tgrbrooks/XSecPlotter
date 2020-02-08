@@ -52,19 +52,16 @@ class ChiSquare
   }
 
   // Calculate chi2 between fake data and MC for 2D distributions
-  std::pair<double, int> Calculate(TH2D* data, Histo2D* mc){
+  std::pair<double, int> Calculate(TH2Poly* data, Histo2D* mc){
 
-    int nxbins = mc->total_hist->GetNbinsX();
-    int nybins = mc->total_hist->GetNbinsY();
-    int nbins = mc->systematics->total->covariance->GetNbinsX();
+    int nbins = mc->total_hist->GetNumberOfBins();
+    double scale = 5000;
 
     std::vector<int> filled_bins;
     for(int i = 1; i <= nbins; i++){
-      int i_x = ceil((double)i/nybins);
-      int i_y = i - nybins*(i_x-1);
       // Doesn't work if there is no entry in MC bin
-      if(mc->systematics->total->covariance->GetBinContent(i, i)+data->GetBinError(i_x, i_y)< 1e-6
-         || mc->total_hist->GetBinContent(i_x, i_y)< 1e-6) continue;
+      if(mc->systematics->total->covariance->GetBinContent(i, i)+data->GetBinError(i)< 1e-6
+         || mc->total_hist->GetBinContent(i)< 1e-6) continue;
       filled_bins.push_back(i);
     }
 
@@ -74,15 +71,13 @@ class ChiSquare
 
     for (int i = 0; i < filled_bins.size(); i ++) {
       int bin_i = filled_bins[i];
-      int i_x = ceil((double)bin_i/nybins);
-      int i_y = bin_i - nybins*(i_x-1);
       for (int j = 0; j < filled_bins.size(); j ++) {
         int bin_j = filled_bins[j];
         cov[i][j] = mc->systematics->total->covariance->GetBinContent(bin_i, bin_j);
-        if(bin_i == bin_j) cov[i][j] += pow(data->GetBinError(i_x, i_y), 2); 
+        if(bin_i == bin_j) cov[i][j] += pow(data->GetBinError(bin_i), 2); 
       }
     }
-    cov.Print();
+    //cov.Print();
     std::cout<<"Det = "<<cov.Determinant()<<"\n";
 
     TMatrix cov_inv = cov.Invert();
@@ -90,19 +85,15 @@ class ChiSquare
     double chi2 = 0.;
     for (int i = 0; i < filled_bins.size(); i++) {
       int bin_i = filled_bins[i];
-      int i_x = ceil((double)bin_i/nybins);
-      int i_y = bin_i - nybins*(i_x-1);
       
       for (int j = 0; j < filled_bins.size(); j++) {
         int bin_j = filled_bins[j];
-        int j_x = ceil((double)bin_j/nybins);
-        int j_y = bin_j - nybins*(j_x-1);
 
-        double data_i = data->GetBinContent(i_x, i_y);
-        double mc_i = mc->total_hist->GetBinContent(i_x, i_y);
+        double data_i = data->GetBinContent(bin_i);
+        double mc_i = mc->total_hist->GetBinContent(bin_i);
 
-        double data_j = data->GetBinContent(j_x, j_y);
-        double mc_j = mc->total_hist->GetBinContent(j_x, j_y);
+        double data_j = data->GetBinContent(bin_j);
+        double mc_j = mc->total_hist->GetBinContent(bin_j);
 
         chi2 += (data_i - mc_i) * cov_inv[i][j] * (data_j - mc_j);
 

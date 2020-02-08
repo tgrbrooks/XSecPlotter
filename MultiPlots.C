@@ -19,6 +19,7 @@
 #include <TH1F.h>
 #include <TH1D.h>
 #include <TH2D.h>
+#include <TH2Poly.h>
 #include <TH3D.h>
 #include <THStack.h>
 #include <TROOT.h>
@@ -142,7 +143,7 @@ void MultiPlots(){
     }
     plotter->Plot2DHisto(histmans[0]->GetHisto2D(0, 1), 0, 1);
     if(config->plot_slices){
-      plotter->Plot2DSlices(histos_2D, 0, 1);
+      plotter->Plot2DSlices(histos_2D, 0);
     }
     // Only plot correlation and response for first file
     if(config->plot_correlation && config->show_syst_error){

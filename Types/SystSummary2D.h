@@ -16,15 +16,13 @@ class SystSummary2D
   Systematics2D* total;
 
   // Constructor
-  SystSummary2D(TH2D* hist){
-    genie = new Systematics2D(hist, "_geniesyst");
-    flux = new Systematics2D(hist, "_fluxsyst");
-    detector = new Systematics2D(hist, "_detsyst");
-    background = new Systematics2D(hist, "_bkgsyst");
-    constant = new Systematics2D(hist, "_constsyst");
-    total = new Systematics2D(hist, "_totalsyst");
-    //total = (TH2D*)hist->Clone(TString(hist->GetName())+"_totalsyst");
-    //total->Reset();
+  SystSummary2D(TH2Poly* hist, std::vector<double> yb, std::vector<std::vector<double>> xb){
+    genie = new Systematics2D(hist, "_geniesyst", yb, xb);
+    flux = new Systematics2D(hist, "_fluxsyst", yb, xb);
+    detector = new Systematics2D(hist, "_detsyst", yb, xb);
+    background = new Systematics2D(hist, "_bkgsyst", yb, xb);
+    constant = new Systematics2D(hist, "_constsyst", yb, xb);
+    total = new Systematics2D(hist, "_totalsyst", yb, xb);
   }
 
   Systematics2D* GetSyst(TString name){
@@ -44,20 +42,14 @@ class SystSummary2D
     AddSyst(total, background);
     AddSyst(total, constant);
 
-    int nxbins = total->mean_syst->GetNbinsX();
-    int nybins = total->mean_syst->GetNbinsY();
-    int nbins = nxbins*nybins;
+    int nbins = total->mean_syst->GetNumberOfBins();
 
     for(size_t i = 1; i <= nbins; i++){
-      int i_x = ceil((double)i/nybins);
-      int i_y = i - nybins*(i_x-1);
-      double cv_i = total->mean_syst->GetBinContent(i_x, i_y);
+      double cv_i = total->mean_syst->GetBinContent(i);
       double s_ii = std::sqrt(total->covariance->GetBinContent(i, i));
       for(size_t j = 1; j <= nbins; j++){
-        int j_x = ceil((double)j/nybins);
-        int j_y = j - nybins*(j_x-1);
         double cov_ij = total->covariance->GetBinContent(i, j);
-        double cv_j = total->mean_syst->GetBinContent(j_x, j_y);
+        double cv_j = total->mean_syst->GetBinContent(j);
         double s_jj = std::sqrt(total->covariance->GetBinContent(j, j));
         total->frac_covariance->SetBinContent(i, j, cov_ij/(cv_i*cv_j));
         total->correlation->SetBinContent(i, j, cov_ij/(s_ii*s_jj));
@@ -73,12 +65,10 @@ class SystSummary2D
   }
 
   // Add histogram errors in quadrature, ignoring bin contents
-  void AddErrors(TH2D* syst_hist, TH2D* hist){
-    for(size_t i = 1; i <= syst_hist->GetNbinsX(); i++){
-      for(size_t j = 1; j <= syst_hist->GetNbinsY(); j++){
-        double new_err = std::sqrt(std::pow(syst_hist->GetBinError(i, j),2)+std::pow(hist->GetBinError(i, j),2));
-        syst_hist->SetBinError(i, j, new_err);
-      }
+  void AddErrors(TH2Poly* syst_hist, TH2Poly* hist){
+    for(size_t i = 1; i <= syst_hist->GetNumberOfBins(); i++){
+      double new_err = std::sqrt(std::pow(syst_hist->GetBinError(i),2)+std::pow(hist->GetBinError(i),2));
+      syst_hist->SetBinError(i, new_err);
     }
   }
 

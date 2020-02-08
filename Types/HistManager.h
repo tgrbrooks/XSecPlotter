@@ -38,23 +38,38 @@ class HistManager
     // 1D histograms
     for(size_t i = 0; i < config->plot_variables.size(); i++){
       TString key1D = config->plot_variables[i];
+
+      // Make the histograms
       TH1D* hist1D = GetTotalHist1D(i);
       std::pair<THStack*, TLegend*> stack1D = StackHist1D(i);
+
+      // Create the histo object
       Histo1D* histo1D = new Histo1D(hist1D, stack1D);
       histos_1D[key1D] = histo1D;
-      // Calculate efficiency and purity
+
+      // Calculate efficiency and purity if plotting
       if(config->plot_eff_pur) SetEfficiency(i);
       if(config->plot_response) SetResponse(i);
       // 2D histograms
       for(size_t j = 0; j < config->plot_variables.size(); j++){
         if(i==j) continue;
         std::pair<TString, TString> key2D = std::make_pair(key1D, config->plot_variables[j]);
-        TH2D* hist2D = GetTotalHist2D(i, j);
+
+        // Make the histograms
+        TH2Poly* hist2D = GetTotalHist2D(i, j);
         std::pair<std::vector<THStack*>, TLegend*> stack2D = StackHist2D(i, j);
-        Histo2D* histo2D = new Histo2D(hist2D, stack2D);
+
+        // Get the binning
+        std::vector<double> ybins = binman->Get1DBinning(config->plot_variables[j]);
+        std::vector<std::vector<double>> xbins = binman->Get2DBinning(config->plot_variables[i], config->plot_variables[j]);
+
+        // Create the histo object
+        Histo2D* histo2D = new Histo2D(hist2D, stack2D, ybins, xbins);
         histos_2D[key2D] = histo2D;
+
+        // Calculate efficiency and response if plotting
         if(config->plot_eff_pur) SetEfficiency(i, j);
-        if(config->plot_response) SetResponse(i, j);
+        if(config->plot_response) SetResponse(i, j, hist2D);
       }
     }
     
@@ -90,7 +105,7 @@ class HistManager
   }
 
   // Accessors for 2D binning
-  std::pair<std::vector<double>, std::vector<double>> Get2DBinning(TString plot_var1, TString plot_var2){
+  std::vector<std::vector<double>> Get2DBinning(TString plot_var1, TString plot_var2){
     return binman->Get2DBinning(plot_var1, plot_var2);
   }
 
@@ -227,32 +242,17 @@ class HistManager
   }
 
   // Calculate the efficiency and purity for 1D histograms
-  void SetResponse(size_t var_i, size_t var_j){
+  void SetResponse(size_t var_i, size_t var_j, TH2Poly* hist){
 
     std::pair<TString, TString> key = std::make_pair(config->plot_variables[var_i], config->plot_variables[var_j]);
-    // Create a histogram and fill it with truth and reco pairs
-    // Truth in X and reco in Y
-    std::pair<std::vector<double>, std::vector<double>> bin_edges = Get2DBinning(key.first, key.second);
-    double xedges_array[bin_edges.first.size()];
-    std::copy(bin_edges.first.begin(), bin_edges.first.end(), xedges_array);
-    double yedges_array[bin_edges.second.size()];
-    std::copy(bin_edges.second.begin(), bin_edges.second.end(), yedges_array);
-    int nxbins = bin_edges.first.size();
-    int nybins = bin_edges.second.size();
-    int nbins = nxbins * nybins;
+    int nbins = hist->GetNumberOfBins();
 
-    TH2D *temp_response = new TH2D("temp_response", "", bin_edges.first.size()-1, xedges_array, bin_edges.second.size()-1, yedges_array);
     TH2D *response = new TH2D("response", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
     for(auto const& in : dataman->interactions){
       // When an event is not reconstructed the reco entry is -99999
       // This puts it in the underflow bin for reconstruction
-      int true_xbin = temp_response->GetXaxis()->FindBin(in.true_variables[var_i]);
-      int true_ybin = temp_response->GetYaxis()->FindBin(in.true_variables[var_j]);
-      int true_bin = true_ybin + nybins*(true_xbin-1);
-      int reco_xbin = temp_response->GetXaxis()->FindBin(in.variables[var_i]);
-      int reco_ybin = temp_response->GetYaxis()->FindBin(in.variables[var_j]);
-      int reco_bin = reco_ybin + nybins*(reco_xbin-1);
-      //std::cout<<"vi = "<<in.true_variables[var_i]<<" vj = "<<in.true_variables[var_j]<<" x,y = "<<true_xbin<<","<<true_ybin<<" global = "<<true_bin<<"\n";
+      int true_bin = hist->FindBin(in.true_variables[var_i], in.true_variables[var_j]);
+      int reco_bin = hist->FindBin(in.variables[var_i], in.variables[var_j]);
       response->Fill(true_bin-0.5, reco_bin-0.5);
     }
 
@@ -274,7 +274,6 @@ class HistManager
         } 
       }   
     } 
-    delete temp_response;
     delete response;
 
   }
@@ -376,42 +375,49 @@ class HistManager
   // Create stacked histogram and legend from data
   std::pair<std::vector<THStack*>, TLegend*> StackHist2D(size_t var_i, size_t var_j){
 
+    // Include name of tune if more than one file used
     TString tune = "";
     if(config->tune_name.size() > 1) tune = config->tune_name[file_i];
-    std::pair<std::vector<double>, std::vector<double>> bin_edges = binman->Get2DBinning(config->plot_variables[var_i], config->plot_variables[var_j]);
-    double xedges_array[bin_edges.first.size()];
-    std::copy(bin_edges.first.begin(), bin_edges.first.end(), xedges_array);
-    double yedges_array[bin_edges.second.size()];
-    std::copy(bin_edges.second.begin(), bin_edges.second.end(), yedges_array);
+    TString name = tune+config->plot_variables[var_i]+"_"+config->plot_variables[var_j];
 
+    // Get the bin edges
+    std::vector<double> ybin_edges = binman->Get1DBinning(config->plot_variables[var_j]);
+    std::vector<std::vector<double>> bin_edges = binman->Get2DBinning(config->plot_variables[var_i], config->plot_variables[var_j]);
+
+    // Create a stacked hist for each Y bin
     std::vector<THStack*> hstacks;
-    for(size_t bin_j = 0; bin_j < bin_edges.second.size()-1; bin_j++){
-      TString name = tune+config->plot_variables[var_i]+"_"+config->plot_variables[var_j]+Form("_%.1f_%.1f", yedges_array[bin_j], yedges_array[bin_j+1]);
-      TString title = titles->hist_titles[var_j] + Form(": [%.2f, %.2f] ", yedges_array[bin_j], yedges_array[bin_j+1]) + titles->units[var_j];
+    for(size_t bin_j = 0; bin_j < ybin_edges.size()-1; bin_j++){
+      TString name = tune+config->plot_variables[var_i]+"_"+config->plot_variables[var_j]+Form("_%.1f_%.1f", ybin_edges[bin_j], ybin_edges[bin_j+1]);
+      TString title = titles->hist_titles[var_j] + Form(": [%.2f, %.2f] ", ybin_edges[bin_j], ybin_edges[bin_j+1]) + titles->units[var_j];
       THStack *hstack = new THStack(name, title);
       hstacks.push_back(hstack);
     }
     TLegend *legend = new TLegend(0.14, 0., 0.94, 0.06);
 
-    for(size_t bin_j = 0; bin_j < bin_edges.second.size()-1; bin_j++){
+    for(size_t bin_j = 0; bin_j < ybin_edges.size()-1; bin_j++){
       int index = 0;
+      std::vector<double> xbin_edges = bin_edges[bin_j];
+      double xedges_array[xbin_edges.size()];
+      std::copy(xbin_edges.begin(), xbin_edges.end(), xedges_array);
+
       for(auto const& dat: dataman->stack_data){
-        TH1D* hist = new TH1D(Form(tune+config->plot_variables[var_i]+config->plot_variables[var_j]+dat.first.c_str()+"%i", bin_j), "", bin_edges.first.size()-1, xedges_array);
+        TString name_1D = Form(tune+config->plot_variables[var_i]+config->plot_variables[var_j]+dat.first.c_str()+"%i", bin_j);
+        TH1D* hist = new TH1D(name_1D, "", xbin_edges.size()-1, xedges_array);
         for(size_t n = 0; n < dat.second.size(); n++){
-          if(dat.second[n][var_j] >= bin_edges.second[bin_j] && dat.second[n][var_j] < bin_edges.second[bin_j+1]){
+          if(dat.second[n][var_j] >= ybin_edges[bin_j] && dat.second[n][var_j] < ybin_edges[bin_j+1]){
             hist->Fill(dat.second[n][var_i]);
           }
         }
         hist->Scale(config->pot_scale_fac[file_i]);
         // If plotting cross section convert from rate
         if(config->plot_xsec){
-          double width = (bin_edges.second[bin_j+1] - bin_edges.second[bin_j]);
+          double width = (ybin_edges[bin_j+1] - ybin_edges[bin_j]);
           double xsec_scale = 1e38/(width * config->flux[file_i] * config->targets);
           hist->Scale(xsec_scale, "width");
         }
         // Else if max error used divide each bin by width
         else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
-          double width = (bin_edges.second[bin_j+1] - bin_edges.second[bin_j]);
+          double width = (ybin_edges[bin_j+1] - ybin_edges[bin_j]);
           hist->Scale(1/width, "width");
         }
         hist->SetFillColor(config->cols[index]+file_i);
@@ -430,32 +436,43 @@ class HistManager
   }
 
   // Get the total (unstacked) histogram
-  TH2D* GetTotalHist2D(size_t var_i, size_t var_j){
+  TH2Poly* GetTotalHist2D(size_t var_i, size_t var_j){
       
+    // Include name of tune if more than one file used
     TString tune = "";
     if(config->tune_name.size() > 1) tune = config->tune_name[file_i];
-    std::pair<std::vector<double>, std::vector<double>> bin_edges = binman->Get2DBinning(config->plot_variables[var_i], config->plot_variables[var_j]);
-    double xedges_array[bin_edges.first.size()];
-    std::copy(bin_edges.first.begin(), bin_edges.first.end(), xedges_array);
-    double yedges_array[bin_edges.second.size()];
-    std::copy(bin_edges.second.begin(), bin_edges.second.end(), yedges_array);
-    TH2D *total_hist = new TH2D(tune+config->plot_variables[var_i]+"_"+config->plot_variables[var_j], "", bin_edges.first.size()-1, xedges_array, bin_edges.second.size()-1, yedges_array);
+    TString name = tune+config->plot_variables[var_i]+"_"+config->plot_variables[var_j];
+
+    // Get the bin edges
+    std::vector<double> ybin_edges = binman->Get1DBinning(config->plot_variables[var_j]);
+    std::vector<std::vector<double>> bin_edges = binman->Get2DBinning(config->plot_variables[var_i], config->plot_variables[var_j]);
+
+    // Create a 2d poly hist
+    TH2Poly* total_hist = new TH2Poly();
+    total_hist->SetName(name);
+    total_hist->SetTitle("");
+
+    // Add all the bins
+    for(size_t i = 0; i < ybin_edges.size()-1; i++){
+      std::vector<double> xbin_edges = bin_edges[i];
+      for(size_t j = 0; j < xbin_edges.size()-1; j++){
+        total_hist->AddBin(xbin_edges[j], ybin_edges[i], xbin_edges[j+1], ybin_edges[i+1]);
+      }
+    }
 
     for (int n = 0; n < dataman->total_data.size(); n++){
       total_hist->Fill(dataman->total_data[n][var_i], dataman->total_data[n][var_j]);
     }
     // Include scale factor bin by bin as ->Scale() won't change errors
-    for(size_t i = 0; i <= total_hist->GetNbinsX(); i++){
-      for(size_t j = 0; j <= total_hist->GetNbinsX(); j++){
-        total_hist->SetBinContent(i, j, total_hist->GetBinContent(i, j)*config->pot_scale_fac[file_i]);
-      }
+    for(size_t i = 0; i <= total_hist->GetNumberOfBins(); i++){
+      total_hist->SetBinContent(i, total_hist->GetBinContent(i)*config->pot_scale_fac[file_i]);
     }
     // If plotting cross section convert from rate
     if(config->plot_xsec){
       double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
       total_hist->Scale(xsec_scale, "width");
     }
-    // Else if max error used divide each bin by width FIXME is this ok for stat errors?
+    // Else if max error used divide each bin by width
     else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
       total_hist->Scale(1, "width");
     }

@@ -14,13 +14,13 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_geniev2rwt.root, Trees/xsectree_geniev3rwt.root
+InputFile: Trees/xsectree_geniev3rwt.root, Trees/xsectree_geniev2rwt.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv2_, GENIEv3_
+TuneName: GENIEv3_,  GENIEv2_ 
 
 // Name of output file (.root for modifiable canvas)
-OutputFile: thesis/multi.png
+OutputFile: test/multi.png
 
 //------------------------------------------------------------------------
 //          Select neutrino interaction (commas for multiple)
@@ -116,7 +116,7 @@ MinValue: -1, 0
 MaxValue: 1, 2
 
 // Number of bins (-1 for automatic)
-NumBins: -1, -1
+NumBins: 50, 50
 
 // Bin edges (separate edges with , and plot variables in [] brackets)
 BinEdges: [-1], [-1]
@@ -152,7 +152,7 @@ ConstantSyst: 0.027
 ShowErrorBars: true
 
 // Produce covariance and correlation matrices for systematic errors (true)
-PlotCorrelation: false
+PlotCorrelation: true
 
 // Plot all of the different universes for systematic uncertainties
 PlotUniverses: false
@@ -161,4 +161,4 @@ PlotUniverses: false
 PlotEffPur: false
 
 // Produce response matrix (true)
-PlotResponse: false
+PlotResponse: true

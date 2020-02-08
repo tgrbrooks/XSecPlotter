@@ -41,6 +41,7 @@
 #include "Types/SystCalculator.h"
 #include "Types/Interaction.h"
 #include "Types/Selection.h"
+#include "Types/ChiSquare.h"
 #include "Functions/StyleSetter.h"
 
 
@@ -103,7 +104,7 @@ void MultiPlots(){
   int n_hists = histmans[0]->GetNHists();
   // Ask user if they want to make that many histograms
   std::string response = "y";
-  if(n_hists>20){
+  if(n_hists>20 && config->plot_slices){
     std::cout<<"This will produce "<<n_hists<<" histograms, continue (y/n)? ";
     std::cin>>response;
   }
@@ -112,32 +113,47 @@ void MultiPlots(){
   // Initialise the plotter
   std::cout<<"Making the plots...\n";
   Plotter *plotter = new Plotter(config, titles);
+  ChiSquare chsq;
   // Print summary
   // Plot all the 1D plots
   for(size_t i = 0; i < config->plot_variables.size(); i++){
     std::vector<Histo1D*> histos_1D;
     for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
-      histos_1D.push_back(histmans[i]->GetHisto1D(i);
+      histos_1D.push_back(histmans[file_i]->GetHisto1D(i));
     }
-    plotter->All1DPlots(histmans[0]->GetHisto1D(i), i);
+    plotter->All1DPlots(histos_1D, i);
+    // Only plot correlation and response for first file
     if(config->plot_correlation && config->show_syst_error){
       plotter->PlotAllSysts(histmans[0]->GetHisto1D(i));
     }
     if(config->plot_response){
       plotter->PlotResponse(histmans[0]->GetHisto1D(i)->response);
     }
+    if(config->input_file.size() == 2){
+      std::pair<double, int> chindof = chsq.Calculate(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
+      std::cout<<"1D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
+    }
   }
   // Only plot slices in the second variable
   if(config->plot_variables.size() == 2){
+    std::vector<Histo2D*> histos_2D;
+    for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
+      histos_2D.push_back(histmans[file_i]->GetHisto2D(0, 1));
+    }
     plotter->Plot2DHisto(histmans[0]->GetHisto2D(0, 1), 0, 1);
     if(config->plot_slices){
-      plotter->Plot2DSlices(histmans[0]->GetHisto2D(0, 1), 0, 1);
+      plotter->Plot2DSlices(histos_2D, 0, 1);
     }
+    // Only plot correlation and response for first file
     if(config->plot_correlation && config->show_syst_error){
       plotter->PlotAllSysts(histmans[0]->GetHisto2D(0, 1));
     }
     if(config->plot_response){
       plotter->PlotResponse(histmans[0]->GetHisto2D(0, 1)->response);
+    }
+    if(config->input_file.size() == 2){
+      std::pair<double, int> chindof = chsq.Calculate(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
+      std::cout<<"2D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
     }
   }
   std::cout<<"...Finished.\n";

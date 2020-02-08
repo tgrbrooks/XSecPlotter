@@ -20,7 +20,7 @@ InputFile: Trees/xsectree_geniev2rwt.root, Trees/xsectree_geniev3rwt.root
 TuneName: GENIEv2_, GENIEv3_
 
 // Name of output file (.root for modifiable canvas)
-OutputFile: test/new.png
+OutputFile: thesis/multi.png
 
 //------------------------------------------------------------------------
 //          Select neutrino interaction (commas for multiple)
@@ -65,7 +65,7 @@ InteractionType: -1
 //- true (selection and kinematic variables all in truth)
 //- smeareff (Applies efficiency and smears plotting variables only)
 //- reco (Efficiency + smearing + PID + selection) TODO: only for numuCC
-Stage: true
+Stage: reco
 
 // Variable to plot in
 // Bools
@@ -92,13 +92,13 @@ Stage: true
 //- delta_alphat (transverse kinematic variable) [rad]
 //- delta_phit (transverse kinematic variable) [rad]
 
-PlotVariable: lep_mom
+PlotVariable: cos_lep_theta, lep_mom
 
 // Save the plots for each variable
 PlotSlices: false
 
 // Scale to a certain POT (-1 for no scaling) (6.6e20 is nominal)
-PotScale: -1
+PotScale: 6.6e20
 
 //------------------------------------------------------------------------
 //                           Choose how to plot
@@ -110,19 +110,19 @@ PlotStacked: false
 StackBy: int
 
 // Minimum bin (-1 for min tree value)
-MinValue: 0
+MinValue: -1, 0
 
 // Maximum bin (-1 for max tree value)
-MaxValue: 2
+MaxValue: 1, 2
 
 // Number of bins (-1 for automatic)
-NumBins: 20
+NumBins: -1, -1
 
 // Bin edges (separate edges with , and plot variables in [] brackets)
-BinEdges: [-1]
+BinEdges: [-1], [-1]
 
 // Maximum percentage error per bin (0->1, -1 for none) (merges bins)
-MaxError: -1
+MaxError: 0.01
 
 // Plot cross-section (true) or rate (false)
 PlotXSec: false
@@ -140,10 +140,10 @@ ShowInfo: false
 ShowStatError: false
 
 // Show systematic error (true)
-ShowSystError: false
+ShowSystError: true
 
 // List of systematics to include (genie, flux, detector, background, constant)
-Systematics: flux
+Systematics: genie, flux, detector, background, constant
 
 // Value of constant percentage systematic error (0->1)
 ConstantSyst: 0.027

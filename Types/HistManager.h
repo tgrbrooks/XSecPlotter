@@ -297,18 +297,18 @@ class HistManager
       for(size_t n = 0; n < dat.second.size(); n++){
         hist->Fill(dat.second[n][var_i]);
       }
-      hist->Scale(config->pot_scale_fac[0]);
+      hist->Scale(config->pot_scale_fac[file_i]);
       // If plotting cross section convert from rate
       if(config->plot_xsec){
-        double xsec_scale = 1e38/(config->flux[0] * config->targets);
+        double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
         hist->Scale(xsec_scale, "width");
       }
       // Else if max error used divide each bin by width
       else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
         hist->Scale(1, "width");
       }
-      hist->SetFillColor(config->cols[index]);
-      hist->SetLineColor(config->cols[index]);
+      hist->SetFillColor(config->cols[index]+file_i);
+      hist->SetLineColor(config->cols[index]+file_i);
       if(!config->plot_filled){
         hist->SetFillColor(0);
         hist->SetLineWidth(3);
@@ -369,6 +369,7 @@ class HistManager
     else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
       total_hist->Scale(1, "width");
     }
+    total_hist->SetLineColor(config->cols[0]+file_i);
     return total_hist;
   }
 
@@ -395,17 +396,17 @@ class HistManager
     for(size_t bin_j = 0; bin_j < bin_edges.second.size()-1; bin_j++){
       int index = 0;
       for(auto const& dat: dataman->stack_data){
-        TH1D* hist = new TH1D(Form(config->plot_variables[var_i]+config->plot_variables[var_j]+dat.first.c_str()+"%i", bin_j), "", bin_edges.first.size()-1, xedges_array);
+        TH1D* hist = new TH1D(Form(tune+config->plot_variables[var_i]+config->plot_variables[var_j]+dat.first.c_str()+"%i", bin_j), "", bin_edges.first.size()-1, xedges_array);
         for(size_t n = 0; n < dat.second.size(); n++){
           if(dat.second[n][var_j] >= bin_edges.second[bin_j] && dat.second[n][var_j] < bin_edges.second[bin_j+1]){
             hist->Fill(dat.second[n][var_i]);
           }
         }
-        hist->Scale(config->pot_scale_fac[0]);
+        hist->Scale(config->pot_scale_fac[file_i]);
         // If plotting cross section convert from rate
         if(config->plot_xsec){
           double width = (bin_edges.second[bin_j+1] - bin_edges.second[bin_j]);
-          double xsec_scale = 1e38/(width * config->flux[0] * config->targets);
+          double xsec_scale = 1e38/(width * config->flux[file_i] * config->targets);
           hist->Scale(xsec_scale, "width");
         }
         // Else if max error used divide each bin by width
@@ -413,8 +414,8 @@ class HistManager
           double width = (bin_edges.second[bin_j+1] - bin_edges.second[bin_j]);
           hist->Scale(1/width, "width");
         }
-        hist->SetFillColor(config->cols[index]);
-        hist->SetLineColor(config->cols[index]);
+        hist->SetFillColor(config->cols[index]+file_i);
+        hist->SetLineColor(config->cols[index]+file_i);
         if(!config->plot_filled){
           hist->SetFillColor(0);
           hist->SetLineWidth(3);
@@ -458,6 +459,7 @@ class HistManager
     else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
       total_hist->Scale(1, "width");
     }
+    total_hist->SetLineColor(config->cols[0]+file_i);
     return total_hist;
   }
 

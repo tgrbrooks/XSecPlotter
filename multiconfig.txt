@@ -14,10 +14,10 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_geniev3rwt.root, Trees/xsectree_geniev2rwt.root
+InputFile: Trees/xsectree_flux2.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv3_,  GENIEv2_ 
+TuneName: GENIEv3_
 
 // Name of output file (.root for modifiable canvas)
 OutputFile: test/multi.png
@@ -32,7 +32,7 @@ NuPdg: 14
 IsCC: 1
 
 // Require lepton to be contained (put "true, false" for contained and exiting)
-ContainedLepton: true, false
+ContainedLepton: true
 
 // Require secondary particles to be contained
 ContainedParticles: true
@@ -92,7 +92,7 @@ Stage: reco
 //- delta_alphat (transverse kinematic variable) [rad]
 //- delta_phit (transverse kinematic variable) [rad]
 
-PlotVariable: cos_lep_theta, lep_mom
+PlotVariable: lep_mom
 
 // Save the plots for each variable
 PlotSlices: false
@@ -110,16 +110,16 @@ PlotStacked: false
 StackBy: int
 
 // Minimum bin (-1 for min tree value)
-MinValue: -1, 0
+MinValue: 0
 
 // Maximum bin (-1 for max tree value)
-MaxValue: 1, 2
+MaxValue: 2
 
 // Number of bins (-1 for automatic)
-NumBins: 50, 50
+NumBins: 100
 
 // Bin edges (separate edges with , and plot variables in [] brackets)
-BinEdges: [-1], [-1]
+BinEdges: [-1]
 
 // Maximum percentage error per bin (0->1, -1 for none) (merges bins)
 MaxError: 0.01
@@ -155,10 +155,10 @@ ShowErrorBars: true
 PlotCorrelation: true
 
 // Plot all of the different universes for systematic uncertainties
-PlotUniverses: false
+PlotUniverses: true
 
 // Produce efficiency and purity plots (true)
-PlotEffPur: false
+PlotEffPur: true
 
 // Produce response matrix (true)
 PlotResponse: true

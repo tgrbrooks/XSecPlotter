@@ -2,6 +2,14 @@
 void SetStyle(){
 
   gStyle->Reset();
+  gStyle->SetFillColor(1);
+  gStyle->SetFillStyle(1001);   // solid
+  gStyle->SetFrameFillColor(0);
+  gStyle->SetFrameBorderMode(0);
+  gStyle->SetPadBorderMode(0);
+  gStyle->SetPadColor(0);
+  gStyle->SetCanvasBorderMode(0);
+  gStyle->SetCanvasColor(0);
 
   Int_t font = 62;
   Double_t font_size = 0.06;

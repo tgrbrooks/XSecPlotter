@@ -74,7 +74,7 @@ std::vector<double> ChangeBinning(TH1D* hist, double max, double err){
 
 std::vector<double> GetBinning(std::vector<double> data, double err, std::string var){
   std::map<std::string, double> mins = {{"mom", 0}, {"theta", -1}, {"phi", -180}, {"vise", 0}, {"ntracks", 0}};
-  std::map<std::string, double> maxs = {{"mom", 2}, {"theta", 1}, {"phi", 180}, {"vise", 2}, {"ntracks", 7}};
+  std::map<std::string, double> maxs = {{"mom", 2}, {"theta", 1}, {"phi", 180}, {"vise", 3}, {"ntracks", 7}};
   std::map<std::string, double> nbins = {{"mom", 100}, {"theta", 100}, {"phi", 100}, {"vise", 100}, {"ntracks", 7}};
   TH1D* hist = new TH1D("temp_hist", "", nbins[var], mins[var], maxs[var]);
   for(auto const& d : data){
@@ -261,10 +261,10 @@ void Variables(){
   // Read in fake data
   std::vector<double> data_mom;
   std::vector<double> data_theta;
-  //std::vector<double> data_phi;
+  std::vector<double> data_phi;
   std::vector<double> data_vise;
   std::vector<double> data_ntracks;
-  TFile data_file("../Trees/xsectree_geniev3rwt.root");
+  TFile data_file("../Trees/xsectree_v3rwt.root");
   TTreeReader tree_reader("XSecTree/interaction", &data_file);
   TTreeReaderValue<double> vtx_x(tree_reader, "vtx_x");
   TTreeReaderValue<double> vtx_y(tree_reader, "vtx_y");
@@ -273,7 +273,7 @@ void Variables(){
   TTreeReaderValue<int>    nu_pdg(tree_reader, "reco_nu_pdg");
   TTreeReaderValue<double> lep_mom(tree_reader, "reco_lep_mom");
   TTreeReaderValue<double> lep_theta(tree_reader, "reco_lep_theta");
-  //TTreeReaderValue<double> lep_phi(tree_reader, "reco_lep_phi");
+  TTreeReaderValue<double> lep_phi(tree_reader, "reco_lep_phi");
   TTreeReaderValue<double> vise(tree_reader, "reco_nu_energy");
   TTreeReaderValue<unsigned int> npr(tree_reader, "reco_n_pr");
   TTreeReaderValue<unsigned int> npi(tree_reader, "reco_n_pipm");
@@ -284,11 +284,11 @@ void Variables(){
     std::vector<double> data_v;
     data_mom.push_back(*lep_mom);
     data_theta.push_back(cos(*lep_theta));
-    //data_phi.push_back(*lep_phi*180./TMath::Pi());
-    data_vise.push_back(*vise);
+    data_phi.push_back(*lep_phi*180./TMath::Pi());
+    data_vise.push_back(std::sqrt(std::pow(*lep_mom, 2) + std::pow(0.10566, 2))+*vise);
     data_ntracks.push_back((double)(*npr + *npi));
   }
-  std::vector<std::vector<double>> data = {data_mom, data_theta, data_vise, data_ntracks};
+  std::vector<std::vector<double>> data = {data_mom, data_theta, data_phi, data_vise, data_ntracks};
 
   // Get fake data POT from tree
   TTreeReader pot_reader("XSecTree/metadata", &data_file);
@@ -300,9 +300,9 @@ void Variables(){
 
   // Bin fake data in 1D according to percentage statistical error per bin
   // Create an array of 1D histograms
-  std::vector<std::string> vars = {"mom", "theta", "vise", "ntracks"};
-  std::vector<TString> va = {"P [GeV]", "cos #theta", "E_{visible} [GeV]", "N tracks"};
-  std::vector<TString> vs = {"P", "c#theta", "E", "NT"};
+  std::vector<std::string> vars = {"mom", "theta", "phi", "vise", "ntracks"};
+  std::vector<TString> va = {"P [GeV]", "cos #theta", "#phi [rad]", "E_{visible} [GeV]", "N tracks"};
+  std::vector<TString> vs = {"P", "c#theta", "#phi", "E", "NT"};
   std::vector<TH1D*> hists;
   std::vector<std::vector<double>> edges;
   for(size_t i = 0; i < vars.size(); i++){
@@ -365,10 +365,10 @@ void Variables(){
   std::vector<bool> mc_used;
   std::vector<double> mc_mom;
   std::vector<double> mc_theta;
-  //std::vector<double> mc_phi;
+  std::vector<double> mc_phi;
   std::vector<double> mc_vise;
   std::vector<double> mc_ntracks;
-  TFile mc_file("../Trees/xsectree_geniev2rwt.root");
+  TFile mc_file("../Trees/xsectree_v2rwt.root");
   TTreeReader mc_reader("XSecTree/interaction", &mc_file);
   TTreeReaderValue<double> mc_vtx_x(mc_reader, "vtx_x");
   TTreeReaderValue<double> mc_vtx_y(mc_reader, "vtx_y");
@@ -377,7 +377,7 @@ void Variables(){
   TTreeReaderValue<int>    mc_nu_pdg(mc_reader, "reco_nu_pdg");
   TTreeReaderValue<double> mc_lep_mom(mc_reader, "reco_lep_mom");
   TTreeReaderValue<double> mc_lep_theta(mc_reader, "reco_lep_theta");
-  //TTreeReaderValue<double> mc_lep_phi(mc_reader, "reco_lep_phi");
+  TTreeReaderValue<double> mc_lep_phi(mc_reader, "reco_lep_phi");
   TTreeReaderValue<double> mc_rvise(mc_reader, "reco_nu_energy");
   TTreeReaderValue<unsigned int> mc_npr(mc_reader, "reco_n_pr");
   TTreeReaderValue<unsigned int> mc_npi(mc_reader, "reco_n_pipm");
@@ -388,11 +388,11 @@ void Variables(){
     mc_used.push_back(true);
     mc_mom.push_back(*mc_lep_mom);
     mc_theta.push_back(cos(*mc_lep_theta));
-    //mc_phi.push_back(*mc_lep_phi*180./TMath::Pi());
-    mc_vise.push_back(*mc_rvise);
+    mc_phi.push_back(*mc_lep_phi*180./TMath::Pi());
+    mc_vise.push_back(std::sqrt(std::pow(*mc_lep_mom, 2) + std::pow(0.10566, 2)) + *mc_rvise);
     mc_ntracks.push_back((double)(*mc_npr + *mc_npi));
   }
-  std::vector<std::vector<double>> mc = {mc_mom, mc_theta, mc_vise, mc_ntracks};
+  std::vector<std::vector<double>> mc = {mc_mom, mc_theta, mc_phi, mc_vise, mc_ntracks};
 
   for(size_t n = 0; n < mc[0].size(); n++){
     for(size_t i = 0; i < hists.size(); i++){
@@ -441,7 +441,8 @@ void Variables(){
       }
       // Stat errors
       double serror = pow(hists[i]->GetBinError(j), 2.);
-      cov->SetBinContent(j, j, perror+serror);
+      //cov->SetBinContent(j, j, perror+serror);
+      cov->SetBinContent(j, j, serror);
     }
     // Genie and flux reweighting systematics
     std::vector<TH1D*> genie_v;
@@ -502,7 +503,7 @@ void Variables(){
     det_2D.push_back(det_v);
     covariances_2D.push_back(cov);
   }
-
+/*
   // Get the reweighting from file
   TTreeReader weight_reader("XSecTree/weight", &mc_file);
   TTreeReaderArray<double> gw(weight_reader, "genie_weights");
@@ -542,18 +543,20 @@ void Variables(){
   TTreeReaderArray<int> ds_nu_pdg(det_reader, "ds_nu_pdg");
   TTreeReaderArray<double> ds_lep_mom(det_reader, "ds_lep_mom");
   TTreeReaderArray<double> ds_lep_theta(det_reader, "ds_lep_theta");
+  TTreeReaderArray<double> ds_lep_phi(det_reader, "ds_lep_phi");
+  TTreeReaderArray<double> ds_vise(det_reader, "ds_vise");
+  TTreeReaderArray<unsigned int> ds_ntracks(det_reader, "ds_ntracks");
   while(det_reader.Next()){
     if(!InFiducial(*ds_vtx_x, *ds_vtx_y, *ds_vtx_z)) continue;
     for(size_t j = 0; j < 50; j++){
       if(ds_nu_pdg[j] != 14) continue;
       if(!(ds_particles_contained[j])) continue;
+      std::vector<double> ds_data = {ds_lep_mom[j], cos(ds_lep_theta[j]), std::sqrt(std::pow(ds_lep_mom[j], 2) + std::pow(0.10566, 2)) + ds_lep_phi[j], ds_vise[j], (double)ds_ntracks[j]};
       for(size_t i = 0; i < hists.size(); i++){
-        if(vars[i]=="mom") det[i][j]->Fill(ds_lep_mom[j]);
-        else if(vars[i]=="theta") det[i][j]->Fill(cos(ds_lep_theta[j]));
+        det[i][j]->Fill(ds_data[i]);
       }
       for(size_t i = 0; i < hists_2D.size(); i++){
-        if(vars[ind_2D[i].first]=="mom"&&vars[ind_2D[i].second]=="theta") det_2D[i][j]->Fill(ds_lep_mom[j], cos(ds_lep_theta[j]));
-        if(vars[ind_2D[i].first]=="theta"&&vars[ind_2D[i].second]=="mom") det_2D[i][j]->Fill(cos(ds_lep_theta[j]), ds_lep_mom[j]);
+        det_2D[i][j]->Fill(ds_data[ind_2D[i].first], ds_data[ind_2D[i].second]);
       }
     }
   }
@@ -608,7 +611,7 @@ void Variables(){
     covariances_2D[i]->Add(det_cov);
     delete det_cov;
   }
-
+*/
   // Calculate chi2 between data and MC for each histogram
   std::vector<double> chis;
   for(size_t i = 0; i < hists.size(); i++){
@@ -645,7 +648,7 @@ void Variables(){
     legend->AddEntry(hists[i], "Fake data", "l");
     legend->AddEntry(mc_hists[i], "Simulation", "l");
     legend->Draw();
-    c1->SaveAs(vars[i].c_str()+TString("_hist.png"));
+    c1->SaveAs(TString("Plots/")+vars[i].c_str()+TString("_hist.png"));
   }
 
   std::vector<double> chis_2D;
@@ -657,11 +660,19 @@ void Variables(){
     // Plot all the histogram variations
     TCanvas *c1 = new TCanvas(Form("canvas%i", (int)(i+1)*10), "", 900, 600);
     c1->SetRightMargin(0.16);
-    mc_hists_2D[i]->Scale(1., "width");
+    //mc_hists_2D[i]->Scale(1., "width");
+    for(auto const& obj : *mc_hists_2D[i]->GetBins()){
+      TH2PolyBin *bin = (TH2PolyBin*)obj;
+      double wy = abs(bin->GetYMax() - bin->GetYMin());
+      double wx = abs(bin->GetXMax() - bin->GetXMin());
+      double width = wy*wx;
+      int j = bin->GetBinNumber();
+      mc_hists_2D[i]->SetBinContent(j, mc_hists_2D[i]->GetBinContent(j)/width);
+    }
     mc_hists_2D[i]->GetXaxis()->SetTitle(va[ind_2D[i].first]);
     mc_hists_2D[i]->GetYaxis()->SetTitle(va[ind_2D[i].second]);
     mc_hists_2D[i]->Draw("COLZ");
-    c1->SaveAs(vars[ind_2D[i].first].c_str()+TString(vars[ind_2D[i].second].c_str())+TString("_hist.png"));
+    c1->SaveAs(TString("Plots/")+vars[ind_2D[i].first].c_str()+TString(vars[ind_2D[i].second].c_str())+TString("_hist.png"));
   }
 
   // Plot chi2 vs percentage statistical error per bin
@@ -673,7 +684,7 @@ void Variables(){
   graph->GetYaxis()->SetTitle("#chi^{2}");
   graph->SetMarkerColor(46);
   graph->Draw("AP");
-  canvas->SaveAs("variables.png");
+  canvas->SaveAs("Plots/variables.png");
 
   TH2D *all = new TH2D("all", "", vars.size(), 0, vars.size(), vars.size(), 0, vars.size());
   int pind = 0;
@@ -686,8 +697,11 @@ void Variables(){
       }
     }
   }
-  TCanvas *c2 = new TCanvas("c2", "", 900, 600);
+  TCanvas *c2 = new TCanvas("c2", "", 900, 900);
   c2->SetRightMargin(0.16);
+  c2->SetLeftMargin(0.16);
+  c2->SetTopMargin(0.16);
+  c2->SetBottomMargin(0.16);
   gStyle->SetPaintTextFormat("4.1f");
   all->SetMarkerSize(1.5);
   all->SetMarkerColor(10);
@@ -697,7 +711,7 @@ void Variables(){
     all->GetXaxis()->SetBinLabel(i, vs[i-1]);
     all->GetYaxis()->SetBinLabel(i, vs[i-1]);
   }
-  all->Draw("COL TEXT");
-  c2->SaveAs("all_variables.png");
+  all->Draw("COLZ TEXT");
+  c2->SaveAs("Plots/all_variables.png");
 
 }

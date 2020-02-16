@@ -38,6 +38,7 @@ class Configuration
   bool plot_filled;
   // Optional extras
   bool show_info;
+  bool show_error_band;
   bool show_stat_error;
   bool show_syst_error;
   std::vector<TString> systematics;
@@ -119,6 +120,7 @@ class Configuration
       if(key.find("PlotFilled") != std::string::npos)  plot_filled = (value=="true");
       // Optional extras
       if(key.find("ShowInfo") != std::string::npos)        show_info = (value=="true");
+      if(key.find("ShowErrorBand") != std::string::npos)   show_error_band = (value=="true");
       if(key.find("ShowStatError") != std::string::npos)   show_stat_error = (value=="true");
       if(key.find("ShowSystError") != std::string::npos)   show_syst_error = (value=="true");
       if(key.find("Systematics") != std::string::npos)     systematics = ToTStrings(value);

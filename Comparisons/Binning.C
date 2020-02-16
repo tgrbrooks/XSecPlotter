@@ -154,7 +154,7 @@ void Binning(){
 
   // Read in fake data
   std::vector<double> data;
-  TFile data_file("../Trees/xsectree_geniev3rwt.root");
+  TFile data_file("../Trees/xsectree_v3rwt.root");
   TTreeReader tree_reader("XSecTree/interaction", &data_file);
   TTreeReaderValue<double> vtx_x(tree_reader, "vtx_x");
   TTreeReaderValue<double> vtx_y(tree_reader, "vtx_y");
@@ -210,7 +210,7 @@ void Binning(){
   }
   
   // Read MC data from file
-  TFile mc_file("../Trees/xsectree_geniev2rwt.root");
+  TFile mc_file("../Trees/xsectree_v2rwt.root");
   TTreeReader mc_reader("XSecTree/interaction", &mc_file);
   TTreeReaderValue<double> mc_vtx_x(mc_reader, "vtx_x");
   TTreeReaderValue<double> mc_vtx_y(mc_reader, "vtx_y");
@@ -385,17 +385,17 @@ void Binning(){
     legend->AddEntry(hists[i], "Fake data", "l");
     legend->AddEntry(mc_hists[i], "Simulation", "l");
     legend->Draw();
-    c1->SaveAs(Form("hist_%i.png", (int)i));
+    c1->SaveAs(Form("Plots/hist_%i.png", (int)i));
   }
 
   // Plot chi2 vs percentage statistical error per bin
   TCanvas *canvas = new TCanvas("canvas", "", 900, 600);
-  canvas->SetRightMargin(0.12);
+  canvas->SetRightMargin(0.14);
   TGraph *graph = new TGraph(chis.size(), &errs[0], &chis[0]);
   graph->GetXaxis()->SetTitle("Maximum % error on bin");
   graph->GetYaxis()->SetTitle("#chi^{2}");
   graph->SetMarkerColor(46);
   graph->Draw("AP");
-  canvas->SaveAs("binning.png");
+  canvas->SaveAs("Plots/binning.png");
 
 }

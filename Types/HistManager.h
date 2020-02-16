@@ -138,6 +138,7 @@ class HistManager
 
   // Scale each universe by pot, xsec, bin width where appropriate
   void ScaleUniverses(TString syst){
+    // TODO only scale by xsec for total
     total->systematics->GetSyst(syst)->ScaleUniverses(config, file_i);
     for(auto& kv : histos_1D){
       kv.second->systematics->GetSyst(syst)->ScaleUniverses(config, file_i);
@@ -214,10 +215,13 @@ class HistManager
     double edges_array[bin_edges.size()];
     std::copy(bin_edges.begin(), bin_edges.end(), edges_array);
     TH2D *temp_response = new TH2D("temp_response", "", bin_edges.size()-1, edges_array, bin_edges.size()-1, edges_array);
+    int index = 0;
     for(auto const& in : dataman->interactions){
       // When an event is not reconstructed the reco entry is -99999
       // This puts it in the underflow bin for reconstruction
-      temp_response->Fill(in.true_variables[var_i], in.variables[var_i]);
+      if(in.selected && in.true_selected){
+        temp_response->Fill(in.true_variables[var_i], in.variables[var_i]);
+      }
     }
 
     // Create the response matrix 
@@ -253,7 +257,9 @@ class HistManager
       // This puts it in the underflow bin for reconstruction
       int true_bin = hist->FindBin(in.true_variables[var_i], in.true_variables[var_j]);
       int reco_bin = hist->FindBin(in.variables[var_i], in.variables[var_j]);
-      response->Fill(true_bin-0.5, reco_bin-0.5);
+      if(in.selected && in.true_selected){
+        response->Fill(true_bin-0.5, reco_bin-0.5);
+      }
     }
 
     // Create the response matrix 
@@ -306,8 +312,8 @@ class HistManager
       else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
         hist->Scale(1, "width");
       }
-      hist->SetFillColor(config->cols[index]+file_i);
-      hist->SetLineColor(config->cols[index]+file_i);
+      hist->SetFillColor(config->cols[index+2*file_i]);
+      hist->SetLineColor(config->cols[index+2*file_i]);
       if(!config->plot_filled){
         hist->SetFillColor(0);
         hist->SetLineWidth(3);
@@ -368,7 +374,7 @@ class HistManager
     else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
       total_hist->Scale(1, "width");
     }
-    total_hist->SetLineColor(config->cols[0]+file_i);
+    total_hist->SetLineColor(config->cols[0+2*file_i]);
     return total_hist;
   }
 
@@ -422,6 +428,10 @@ class HistManager
         }
         hist->SetFillColor(config->cols[index]+file_i);
         hist->SetLineColor(config->cols[index]+file_i);
+        if(file_i != 0){
+          hist->SetFillStyle(3444);
+          hist->SetLineStyle(7);
+        }
         if(!config->plot_filled){
           hist->SetFillColor(0);
           hist->SetLineWidth(3);

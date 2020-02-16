@@ -12,6 +12,7 @@ class Histo1D
   TH1D* total_hist;
   TH1D* empty;
   TH1D* error_band;
+  double scale;
   THStack* stacked_hist;
   TLegend* legend;
   std::pair<TH1D*, TH1D*> efficiency;
@@ -26,7 +27,7 @@ class Histo1D
     empty = (TH1D*) total_hist->Clone();
     empty->Reset();
     name = TString(total_hist->GetName());
-    error_band = GetErrorBand(total_hist);
+    GetErrorBand();
 
     // Initialise efficiency, purity and systematics
     TH1D *eff_numerator = (TH1D*) empty->Clone(name+"_effnum");
@@ -51,7 +52,7 @@ class Histo1D
     stacked_hist = stack1D.first;
     legend = stack1D.second;
 
-    error_band = GetErrorBand(total_hist);
+    GetErrorBand();
 
     // Initialise efficiency, purity and systematics
     TH1D *eff_numerator = (TH1D*) empty->Clone(name+"_effnum");
@@ -80,13 +81,13 @@ class Histo1D
     purity = pur;
     systematics = syst;
 
-    error_band = GetErrorBand(total_hist);
+    GetErrorBand();
   }
 
   // Get the percentage statistical error per bin
-  TH1D* GetErrorBand(TH1D* total_hist){
+  void GetErrorBand(){
 
-    TH1D *error_band = (TH1D*)total_hist->Clone();
+    error_band = (TH1D*)total_hist->Clone();
 
     // Set the bin errors on seperate plot
     for (int n = 1; n <= total_hist->GetNbinsX(); n++){
@@ -95,8 +96,18 @@ class Histo1D
      if (total_hist->GetBinContent(n) > 0)
        error_band->SetBinContent(n, 100*total_hist->GetBinError(n)/total_hist->GetBinContent(n));
     }
-    return error_band;
 
+  }
+
+  void SystErrorBand(TString systname, bool stat){
+    for (int n = 1; n <= total_hist->GetNbinsX(); n++){
+      double stat_error = 0;
+      if(stat && systname=="total") stat_error = total_hist->GetBinError(n);
+      double syst_error = systematics->GetSyst(systname)->mean_syst->GetBinError(n);
+      double error = std::sqrt(std::pow(stat_error, 2) + std::pow(syst_error, 2));
+      if (total_hist->GetBinContent(n) > 0)
+        error_band->SetBinContent(n, 100*error/total_hist->GetBinContent(n));
+    }
   }
 
   // Set the efficiency and purity

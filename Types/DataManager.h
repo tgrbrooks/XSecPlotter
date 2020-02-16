@@ -19,8 +19,6 @@ class DataManager
   std::vector<std::vector<double>> total_data;
   std::vector<bool> data_used;
 
-  //DataManager(){}
-
   // Constructor
   DataManager(Configuration *c, size_t f)
   {

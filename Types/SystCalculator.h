@@ -130,8 +130,10 @@ class SystCalculator
     TFile *bkg_file = new TFile("BackgroundTemplates.root");
     TH1D* hMomCos = (TH1D*)bkg_file->Get("hMomCosErr");
     TH1D* hCosThetaCos = (TH1D*)bkg_file->Get("hCosThetaCosErr");
+    TH2D* hMomCosThetaCos = (TH2D*)bkg_file->Get("hMomCosThetaCosErr");
     TH1D* hMomDirt = (TH1D*)bkg_file->Get("hMomDirtErr");
     TH1D* hCosThetaDirt = (TH1D*)bkg_file->Get("hCosThetaDirtErr");
+    TH2D* hMomCosThetaDirt = (TH2D*)bkg_file->Get("hMomCosThetaDirtErr");
 
     // Total systematics
     double tot_dirt_esq = std::pow(TotalBkgError(hMomDirt), 2);
@@ -166,7 +168,7 @@ class SystCalculator
       }
     }
 
-    // 2D systematics
+    // 2D systematics TODO Add 2D systematics properly
     for(auto& kv2D : histman->histos_2D){
       for(size_t i = 1; i <= kv2D.second->total_hist->GetNbinsX(); i++){
         for(size_t j = 1; j <= kv2D.second->total_hist->GetNbinsY(); j++){

@@ -53,7 +53,7 @@ class SystSummary2D
         double s_jj = std::sqrt(total->covariance->GetBinContent(j, j));
         total->frac_covariance->SetBinContent(i, j, cov_ij/(cv_i*cv_j));
         total->correlation->SetBinContent(i, j, cov_ij/(s_ii*s_jj));
-        if(cov_ij==0||(s_ii*s_jj)==0||isnan(s_ii*s_jj)) total->correlation->SetBinContent(i, j, 0);
+        if(cov_ij==0||(s_ii*s_jj)==0||isnan(s_ii*s_jj)) total->correlation->SetBinContent(i, j, 0.000001);
         if(i==j) total->correlation->SetBinContent(i, j, 1);
       }
     }

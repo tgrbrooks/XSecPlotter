@@ -27,7 +27,9 @@ class BinManager
     dataman = d;
 
     // Get the 1D binning for all plotting variables
+    if(config->plot_variables.size() == 2 && config->max_error > 0) config->max_error = config->max_error/3.;
     std::vector<std::vector<double>> bin_edges = GetBinning(dataman->total_data);
+    if(config->plot_variables.size() == 2 && config->max_error > 0) config->max_error = config->max_error*3.;
     for(size_t i = 0; i < config->plot_variables.size(); i++){
       bin_edges_1D[config->plot_variables[i]] = bin_edges[i];
       for(size_t j = 0; j < config->plot_variables.size(); j++){
@@ -238,42 +240,24 @@ class BinManager
       temp_hist->Fill(data[i], data[j]);
     }
     // Include scale factor bin by bin as Scale() won't change errors
-    for(size_t i = 1; i <= temp_hist->GetNbinsX(); i++){
-      for(size_t j = 1; j <= temp_hist->GetNbinsX(); j++){
-        temp_hist->SetBinContent(i, j, temp_hist->GetBinContent(i, j)*config->pot_scale_fac[0]);
+    for(size_t x = 1; x <= temp_hist->GetNbinsX(); x++){
+      for(size_t y = 1; y <= temp_hist->GetNbinsY(); y++){
+        temp_hist->SetBinContent(x, y, temp_hist->GetBinContent(x, y)*config->pot_scale_fac[0]);
       }
+    }
+    if(config->max_error <= 0){
+      std::vector<std::vector<double>> all_edges;
+      for(size_t y = 1; y <= temp_hist->GetNbinsY(); y++){
+        all_edges.push_back(bin_edges[i]);
+      }
+      delete temp_hist;
+      return all_edges;
     }
     std::vector<std::vector<double>> all_bin_edges = ChangeBinning2D(temp_hist, bin_edges[i]);
     delete temp_hist;
     
     return all_bin_edges;
   }
-
-/*
-  // Rebin to the maximum bin error for 2D histograms
-  std::vector<double> ChangeBinning2D(const std::vector<std::vector<double>> &data, std::vector<std::vector<double>> bin_edges, int i, int j, int bin_j){
-
-    double edges_array[bin_edges[i].size()];
-    std::copy(bin_edges[i].begin(), bin_edges[i].end(), edges_array);
-    TH1D *temp_hist = new TH1D("temp_hist", "", bin_edges[i].size()-1, edges_array);
-    // Loop over data
-    for(auto const& dat : data){
-      // Fill temporary histogram
-      if(dat[j] >= bin_edges[j][bin_j] && dat[j] < bin_edges[j][bin_j+1]){
-        temp_hist->Fill(dat[i]);
-      }
-    }
-    // Include scale factor bin by bin as Scale() won't change errors
-    for(size_t n = 1; n <= temp_hist->GetNbinsX(); n++){
-      temp_hist->SetBinContent(n, temp_hist->GetBinContent(n)*config->pot_scale_fac[0]);
-    }
-    // Change the binning so that all bin errors below maximum
-    std::vector<double> bin_edges_new = ChangeBinning(temp_hist, bin_edges[i][bin_edges[i].size()-1]);
-    delete temp_hist;
-    return bin_edges_new;
-
-  }
-*/
 
   // Rebin to the maximum bin error for 2D histograms
   std::vector<std::vector<double>> ChangeBinning2D(TH2D* hist, std::vector<double> xbin_edges){
@@ -291,107 +275,7 @@ class BinManager
     return all_edges;
   }
 
-  /*
-  // Rebin to the maximum bin error for 2D histograms
-  std::pair<std::vector<double>, std::vector<double>> ChangeBinning2D(TH2D* hist, double max1, double max2){
-
-    std::vector<double> xbin_edges;
-    std::vector<double> ybin_edges;
-    for(size_t i = 1; i <= hist->GetNbinsX(); i++){
-      xbin_edges.push_back(hist->ProjectionX()->GetBinLowEdge(i));
-    }
-    xbin_edges.push_back(max1);
-    for(size_t j = 1; j <= hist->GetNbinsY(); j++){
-      ybin_edges.push_back(hist->ProjectionY()->GetBinLowEdge(j));
-    }
-    ybin_edges.push_back(max2);
-
-    // Loop over all X and Y bins
-    std::cout<<"n xbins = "<<hist->GetNbinsX()<<" n ybins = "<<hist->GetNbinsY()<<"\n";
-    for(size_t i = 1; i <= hist->GetNbinsX(); i++){
-      for(size_t j = 1; j <= hist->GetNbinsY(); j++){
-        std::cout<<"i "<<i<<" j "<<j<<" err "<<hist->GetBinError(i,j)/hist->GetBinContent(i,j)<<" = "<<hist->GetBinError(i,j)<<"/"<<hist->GetBinContent(i,j)<<"\n";
-        // See if the bin error is above the limit
-        if(hist->GetBinError(i,j)/hist->GetBinContent(i,j) > config->max_error || hist->GetBinContent(i,j) == 0){
-          std::cout<<"Above error \n";
-
-          // if not in the last x and y bins
-          if(i != hist->GetNbinsX() && j != hist->GetNbinsY()){
-            std::cout<<"Both\n";
-            // Take a look in the next bin over in x and y
-            double xcontent = hist->GetBinContent(i+1, j);
-            double ycontent = hist->GetBinContent(i, j+1);
-            // Remove the bin edge in whichever direction has more entries
-            if(xcontent > ycontent){
-              xbin_edges.erase(xbin_edges.begin()+i);
-            }
-            else{
-              ybin_edges.erase(ybin_edges.begin()+i);
-            }
-            Rebin2D(hist, xbin_edges, ybin_edges);
-            return ChangeBinning2D(hist, max1, max2);
-          }
-          // If not in the last x bin
-          else if(i != hist->GetNbinsX()){
-            std::cout<<"i\n";
-            xbin_edges.erase(xbin_edges.begin()+i);
-            Rebin2D(hist, xbin_edges, ybin_edges);
-            return ChangeBinning2D(hist, max1, max2);
-          }
-          // If not in the last y bin
-          else if(j != hist->GetNbinsY()){
-            std::cout<<"j\n";
-            ybin_edges.erase(ybin_edges.begin()+i);
-            Rebin2D(hist, xbin_edges, ybin_edges);
-            return ChangeBinning2D(hist, max1, max2);
-          }
-          else{
-            std::cout<<"neither\n";
-            // Look at the previous bin in x and y
-            double xcontent = hist->GetBinContent(i-1, j);
-            double ycontent = hist->GetBinContent(i, j-1);
-            // Remove the bin edge in whichever direction has least entries
-            if(xcontent < ycontent){
-              xbin_edges.erase(xbin_edges.begin()+(xbin_edges.size()-2));
-            }
-            else{
-              ybin_edges.erase(ybin_edges.begin()+(ybin_edges.size()-2));
-            }
-            return std::make_pair(xbin_edges, ybin_edges);
-          }
-        }
-      }
-    }
-    return std::make_pair(xbin_edges, ybin_edges);
-
-  }
-
-  // Rebin in 2D assuming new edges have corresponding edges in the old histogram
-  void Rebin2D(TH2D* hist, std::vector<double> xbin_edges, std::vector<double> ybin_edges){
-    double xedges_array[xbin_edges.size()];
-    std::copy(xbin_edges.begin(), xbin_edges.end(), xedges_array);
-    double yedges_array[ybin_edges.size()];
-    std::copy(ybin_edges.begin(), ybin_edges.end(), yedges_array);
-    TH2D* temp_hist = new TH2D("temp", "", xbin_edges.size()-1, xedges_array, ybin_edges.size()-1, yedges_array);
-    for(size_t i = 1; i < hist->GetNbinsX(); i++){
-      double xcenter = hist->GetXaxis()->GetBinCenter(i);
-      for(size_t j = 1; j < hist->GetNbinsY(); j++){
-        double ycenter = hist->GetYaxis()->GetBinCenter(j);
-        double weight = hist->GetBinContent(i, j);
-        temp_hist->Fill(xcenter, ycenter, weight);
-      }
-    }
-    hist->Reset();
-    hist->SetBins(xbin_edges.size()-1, xedges_array, ybin_edges.size()-1, yedges_array);
-    for(size_t i = 1; i < hist->GetNbinsX(); i++){
-      for(size_t j = 1; j < hist->GetNbinsY(); j++){
-        hist->SetBinContent(i, j, temp_hist->GetBinContent(i, j));
-      }
-    }
-    delete temp_hist;
-    
-  }
-*/
+  
 };
 
 #endif

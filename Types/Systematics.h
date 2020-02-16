@@ -46,12 +46,14 @@ class Systematics
     double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
 
     for(size_t u = 0; u < universes.size(); u++){
+      int nbins = universes[u]->GetNbinsX();
       universes[u]->Scale(config->pot_scale_fac[file_i]);
       if(config->plot_xsec){
-        universes[u]->Scale(xsec_scale, "width");
+        if(nbins>1) universes[u]->Scale(xsec_scale, "width");
+        else universes[u]->Scale(xsec_scale);
       }
       else if(config->max_error > 0 || config->bin_edges[0].size() > 1){
-        universes[u]->Scale(1, "width");
+        if(nbins>1) universes[u]->Scale(1, "width");
       }
     }
   }

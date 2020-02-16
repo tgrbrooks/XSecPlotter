@@ -123,6 +123,12 @@ void MultiPlots(){
       histos_1D.push_back(histmans[file_i]->GetHisto1D(i));
     }
     plotter->All1DPlots(histos_1D, i);
+    if(config->show_syst_error){
+      for(auto const& systname : config->systematics){
+        if(config->show_error_band) plotter->Plot1DWithErrors(histos_1D, i, systname);
+        else plotter->Plot1D(histos_1D, i, systname);
+      }
+    }
     // Only plot correlation and response for first file
     if(config->plot_correlation && config->show_syst_error){
       plotter->PlotAllSysts(histmans[0]->GetHisto1D(i));

@@ -14,13 +14,13 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_flux2.root
+InputFile: Trees/xsectree_v3rwt.root, Trees/xsectree_v2rwt.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv3_
+TuneName: GENIEv3_, GENIEv2_
 
 // Name of output file (.root for modifiable canvas)
-OutputFile: test/multi.png
+OutputFile: test/1DComp.png
 
 //------------------------------------------------------------------------
 //          Select neutrino interaction (commas for multiple)
@@ -32,7 +32,7 @@ NuPdg: 14
 IsCC: 1
 
 // Require lepton to be contained (put "true, false" for contained and exiting)
-ContainedLepton: true
+ContainedLepton: true, false
 
 // Require secondary particles to be contained
 ContainedParticles: true
@@ -92,7 +92,7 @@ Stage: reco
 //- delta_alphat (transverse kinematic variable) [rad]
 //- delta_phit (transverse kinematic variable) [rad]
 
-PlotVariable: lep_mom
+PlotVariable: cos_lep_theta
 
 // Save the plots for each variable
 PlotSlices: false
@@ -110,13 +110,13 @@ PlotStacked: false
 StackBy: int
 
 // Minimum bin (-1 for min tree value)
-MinValue: 0
+MinValue: -1
 
 // Maximum bin (-1 for max tree value)
-MaxValue: 2
+MaxValue: 1
 
 // Number of bins (-1 for automatic)
-NumBins: 100
+NumBins: 50
 
 // Bin edges (separate edges with , and plot variables in [] brackets)
 BinEdges: [-1]
@@ -136,8 +136,11 @@ PlotFilled: false
 // Show selection information (true)
 ShowInfo: false
 
+// Show error band at bottom of plot (true)
+ShowErrorBand: false
+
 // Show percentage statistical error (true)
-ShowStatError: false
+ShowStatError: true
 
 // Show systematic error (true)
 ShowSystError: true
@@ -152,13 +155,13 @@ ConstantSyst: 0.027
 ShowErrorBars: true
 
 // Produce covariance and correlation matrices for systematic errors (true)
-PlotCorrelation: true
+PlotCorrelation: false
 
 // Plot all of the different universes for systematic uncertainties
-PlotUniverses: true
+PlotUniverses: false
 
 // Produce efficiency and purity plots (true)
-PlotEffPur: true
+PlotEffPur: false
 
 // Produce response matrix (true)
-PlotResponse: true
+PlotResponse: false

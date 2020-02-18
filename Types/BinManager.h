@@ -126,12 +126,12 @@ class BinManager
   std::vector<double> ChangeBinning(TH1D* hist, double max){
 
     std::vector<double> bin_edges;
-    for(size_t i = 0; i < hist->GetNbinsX(); i++){
+    for(int i = 0; i < hist->GetNbinsX(); i++){
       bin_edges.push_back(hist->GetBinLowEdge(i+1));
     }
     bin_edges.push_back(max);
 
-    for(size_t i = 0; i < hist->GetNbinsX(); i++){
+    for(int i = 0; i < hist->GetNbinsX(); i++){
       if(hist->GetBinError(i+1)/hist->GetBinContent(i+1) > config->max_error || hist->GetBinContent(i+1) == 0){
 
         if(i != hist->GetNbinsX()-1){
@@ -192,7 +192,7 @@ class BinManager
       else{
         TH1D *temp_hist = new TH1D("temp_hist", "", hist_bins[i], hist_min[i], hist_max[i]);
         std::vector<double> bin_edges;
-        for(size_t j = 0; j < temp_hist->GetNbinsX(); j++){
+        for(int j = 0; j < temp_hist->GetNbinsX(); j++){
           bin_edges.push_back(temp_hist->GetBinLowEdge(j+1));
         }
         delete temp_hist;
@@ -214,7 +214,7 @@ class BinManager
         temp_hist->Fill(data[i]);
       }
       // Include scale factor bin by bin as Scale() won't change errors
-      for(size_t n = 1; n <= temp_hist->GetNbinsX(); n++){
+      for(int n = 1; n <= temp_hist->GetNbinsX(); n++){
         temp_hist->SetBinContent(n, temp_hist->GetBinContent(n)*config->pot_scale_fac[0]);
       }
       // Change the binning so that all bin errors below maximum
@@ -240,14 +240,14 @@ class BinManager
       temp_hist->Fill(data[i], data[j]);
     }
     // Include scale factor bin by bin as Scale() won't change errors
-    for(size_t x = 1; x <= temp_hist->GetNbinsX(); x++){
-      for(size_t y = 1; y <= temp_hist->GetNbinsY(); y++){
+    for(int x = 1; x <= temp_hist->GetNbinsX(); x++){
+      for(int y = 1; y <= temp_hist->GetNbinsY(); y++){
         temp_hist->SetBinContent(x, y, temp_hist->GetBinContent(x, y)*config->pot_scale_fac[0]);
       }
     }
     if(config->max_error <= 0){
       std::vector<std::vector<double>> all_edges;
-      for(size_t y = 1; y <= temp_hist->GetNbinsY(); y++){
+      for(int y = 1; y <= temp_hist->GetNbinsY(); y++){
         all_edges.push_back(bin_edges[i]);
       }
       delete temp_hist;
@@ -264,7 +264,7 @@ class BinManager
     
     std::vector<std::vector<double>> all_edges;
     // Loop over slices in one dimension
-    for(size_t i = 1; i <= hist->GetNbinsY(); i++){
+    for(int i = 1; i <= hist->GetNbinsY(); i++){
       TH1D* temp_hist = (TH1D*) hist->ProjectionX("temp_slice", i, i);
       // Rebin slice so errors below maximum
       std::vector<double> bin_edges_new = ChangeBinning(temp_hist, xbin_edges.back());

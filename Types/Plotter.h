@@ -119,7 +119,7 @@ class Plotter
         first = false;
       } else histos[file_i]->stacked_hist->Draw("HIST SAME");
       if(config->show_error_bars){
-        for(size_t n = 0; n <= error_hist->GetNbinsX(); n++){
+        for(int n = 0; n <= error_hist->GetNbinsX(); n++){
           double stat_error = 0;
           if(config->show_stat_error) stat_error = error_hist->GetBinError(n);
           double syst_error = 0;
@@ -272,7 +272,7 @@ class Plotter
         first = false;
       } else histos[file_i]->stacked_hist->Draw("HIST SAME");
       if(config->show_error_bars){
-        for(size_t n = 0; n <= error_hist->GetNbinsX(); n++){
+        for(int n = 0; n <= error_hist->GetNbinsX(); n++){
           double stat_error = 0;
           if(config->show_stat_error) stat_error = error_hist->GetBinError(n);
           double syst_error = 0;

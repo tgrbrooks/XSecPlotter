@@ -69,9 +69,9 @@ class ChiSquare
     cov.Clear();
     cov.ResizeTo(filled_bins.size(), filled_bins.size());
 
-    for (int i = 0; i < filled_bins.size(); i ++) {
+    for (size_t i = 0; i < filled_bins.size(); i ++) {
       int bin_i = filled_bins[i];
-      for (int j = 0; j < filled_bins.size(); j ++) {
+      for (size_t j = 0; j < filled_bins.size(); j ++) {
         int bin_j = filled_bins[j];
         cov[i][j] = mc->systematics->total->covariance->GetBinContent(bin_i, bin_j);
         if(bin_i == bin_j) cov[i][j] += pow(data->GetBinError(bin_i), 2); 
@@ -83,10 +83,10 @@ class ChiSquare
     TMatrix cov_inv = cov.Invert();
     
     double chi2 = 0.;
-    for (int i = 0; i < filled_bins.size(); i++) {
+    for (size_t i = 0; i < filled_bins.size(); i++) {
       int bin_i = filled_bins[i];
       
-      for (int j = 0; j < filled_bins.size(); j++) {
+      for (size_t j = 0; j < filled_bins.size(); j++) {
         int bin_j = filled_bins[j];
 
         double data_i = data->GetBinContent(bin_i);

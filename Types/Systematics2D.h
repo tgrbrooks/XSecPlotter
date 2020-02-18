@@ -45,7 +45,7 @@ class Systematics2D
     TH1D* mean_s = SlicePoly(mean_syst, i, slice_name, ybins, xbins);
     // Need to get the errors separately
     TH1D* std_s = SlicePoly(std_syst, i, slice_name+"_stddev", ybins, xbins);
-    for(size_t x = 1; x <= mean_s->GetNbinsX(); x++) mean_s->SetBinError(x, std_s->GetBinContent(x));
+    for(int x = 1; x <= mean_s->GetNbinsX(); x++) mean_s->SetBinError(x, std_s->GetBinContent(x));
     Systematics* syst_s = new Systematics(sname, uni_s, mean_s);
     return syst_s;
   }

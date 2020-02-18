@@ -66,14 +66,14 @@ class SystCalculator
 
     // Total systematics
     double err = config->constant_syst;
-    for(size_t n = 1; n <= histman->total->total_hist->GetNbinsX(); n++){
+    for(int n = 1; n <= histman->total->total_hist->GetNbinsX(); n++){
       histman->total->systematics->constant->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
       histman->total->systematics->constant->mean_syst->SetBinError(n, err*histman->total->total_hist->GetBinContent(n));
     }
 
     // 1D systematics
     for(auto& kv1D : histman->histos_1D){
-      for(size_t n = 1; n <= kv1D.second->total_hist->GetNbinsX(); n++){
+      for(int n = 1; n <= kv1D.second->total_hist->GetNbinsX(); n++){
         kv1D.second->systematics->constant->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
         kv1D.second->systematics->constant->mean_syst->SetBinError(n, err*kv1D.second->total_hist->GetBinContent(n));
       }
@@ -81,7 +81,7 @@ class SystCalculator
 
     // 2D systematics
     for(auto& kv2D : histman->histos_2D){
-      for(size_t n = 1; n <= kv2D.second->total_hist->GetNumberOfBins(); n++){
+      for(int n = 1; n <= kv2D.second->total_hist->GetNumberOfBins(); n++){
         //Setting bin error for TH2Poly makes mad things happen! Just use another one for errors
         kv2D.second->systematics->constant->mean_syst->SetBinContent(n, kv2D.second->total_hist->GetBinContent(n));
         kv2D.second->systematics->constant->std_syst->SetBinContent(n, err*kv2D.second->total_hist->GetBinContent(n));
@@ -112,7 +112,7 @@ class SystCalculator
     double scale = config->pot[file_i]*config->pot_scale_fac[file_i]/6.6e20;
     double total_error = 0;
     double total_content = bkg->IntegralAndError(0, bkg->GetNbinsX()+1, total_error);
-    for(size_t i = 0; i <= bkg->GetNbinsX()+1; i++){
+    for(int i = 0; i <= bkg->GetNbinsX()+1; i++){
       double err = std::pow(bkg->GetBinError(i),2);
       if(std::isnan(err)) err = 0;
       total_error += err;
@@ -141,14 +141,14 @@ class SystCalculator
     double tot_dirt_esq = std::pow(TotalBkgError(hMomDirt), 2);
     double tot_cos_esq = std::pow(TotalBkgError(hMomCos), 2);
     double total_err = std::sqrt(tot_dirt_esq + tot_cos_esq);
-    for(size_t n = 1; n <= histman->total->total_hist->GetNbinsX(); n++){
+    for(int n = 1; n <= histman->total->total_hist->GetNbinsX(); n++){
       histman->total->systematics->background->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
       histman->total->systematics->background->mean_syst->SetBinError(n, total_err);
     }
 
     // 1D systematics
     for(auto& kv1D : histman->histos_1D){
-      for(size_t n = 1; n <= kv1D.second->total_hist->GetNbinsX(); n++){
+      for(int n = 1; n <= kv1D.second->total_hist->GetNbinsX(); n++){
         double mid = kv1D.second->total_hist->GetBinCenter(n);
         double width = kv1D.second->total_hist->GetBinWidth(n);
         // Determine the plotting variable
@@ -176,7 +176,7 @@ class SystCalculator
 
     // 2D systematics TODO Add 2D systematics properly
     for(auto& kv2D : histman->histos_2D){
-      for(size_t i = 1; i <= kv2D.second->total_hist->GetNumberOfBins(); i++){
+      for(int i = 1; i <= kv2D.second->total_hist->GetNumberOfBins(); i++){
         kv2D.second->systematics->background->mean_syst->SetBinContent(i, kv2D.second->total_hist->GetBinContent(i));
         kv2D.second->systematics->background->std_syst->SetBinContent(i, 0.01*kv2D.second->total_hist->GetBinContent(i));
       }
@@ -218,7 +218,7 @@ class SystCalculator
       if(!sel.InFiducial(*vtx_x, *vtx_y, *vtx_z)) continue;
 
       // Loop over the universes
-      for(size_t ns = 0; ns < nsims; ns++){
+      for(int ns = 0; ns < nsims; ns++){
         // Apply selection
         if(!sel.IsSelected(nu_pdg[ns], true, lep_contained[ns], particles_contained[ns], -1, -1, -1, -1)) continue;
         // Total
@@ -279,7 +279,7 @@ class SystCalculator
       // Determine if interaction was selected
       if(!dataman->data_used[index]){ index++; continue; }
       // Loop over the number of universes
-      for(size_t ns = 0; ns < nsims; ns++){
+      for(int ns = 0; ns < nsims; ns++){
         // Total
         if(genie_weight[ns] > 0 && genie_weight[ns] < 100 && calc_genie){
           histman->total->systematics->genie->universes[ns]->Fill(1., genie_weight[ns]);

@@ -113,7 +113,6 @@ class Systematics2D
       std_dev = std::sqrt(std_dev/(universes.size()-1));
       mean_syst->SetBinContent(i, mean);
       std_syst->SetBinContent(i, std_dev);
-      std::cout<<"cont = "<<mean_syst->GetBinContent(i)<<" err = "<<std_syst->GetBinContent(i)<<"\n";
     }
 
 

@@ -14,10 +14,10 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_v3rwt.root
+InputFile: Trees/xsectree_v3rwt.root, Trees/xsectree_v2rwt.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv3_
+TuneName: GENIEv3_, GENIEv2_
 
 // Name of output file (.root for modifiable canvas)
 OutputFile: temp/2D.png
@@ -155,7 +155,7 @@ ConstantSyst: 0.027
 ShowErrorBars: true
 
 // Produce covariance and correlation matrices for systematic errors (true)
-PlotCorrelation: true
+PlotCorrelation: false
 
 // Plot all of the different universes for systematic uncertainties
 PlotUniverses: false

@@ -27,9 +27,11 @@ class Histo2D
   Histo2D(TH2Poly* hist, std::pair<std::vector<THStack*>, TLegend*> stack2D, std::vector<double> yb, std::vector<std::vector<double>> xb)
   {
     total_hist = hist;
+
+    name = TString(total_hist->GetName());
     empty = (TH2Poly*)total_hist->Clone();
     empty->ClearBinContents();
-    name = TString(total_hist->GetName());
+
     stacked_hist = stack2D.first;
     ybins = yb;
     xbins = xb;
@@ -46,7 +48,7 @@ class Histo2D
     int nbins = total_hist->GetNumberOfBins();
     response = new TH2D(name+"_response", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
 
-    systematics = new SystSummary2D(empty, ybins, xbins);
+    systematics = new SystSummary2D(total_hist, ybins, xbins);
   }
 
 

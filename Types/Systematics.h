@@ -17,7 +17,7 @@ class Systematics
   Systematics(TH1D* hist, TString name){
     mean_syst = (TH1D*)hist->Clone(TString(hist->GetName())+name);
     sname = TString(mean_syst->GetName());
-    mean_syst->Reset();
+    if(name!="_totalsyst") mean_syst->Reset();
     size_t nbins = mean_syst->GetNbinsX();
     covariance = new TH2D(sname+"_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
     frac_covariance = new TH2D(sname+"_frac_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);

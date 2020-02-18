@@ -11,6 +11,7 @@ class Systematics2D
   TString sname;
   std::vector<TH2Poly*> universes;
   TH2Poly* mean_syst;
+  TH2Poly* std_syst;
   std::vector<double> ybins;
   std::vector<std::vector<double>> xbins;
   TH2D* covariance;
@@ -20,8 +21,10 @@ class Systematics2D
   // Constructor
   Systematics2D(TH2Poly* hist, TString name, std::vector<double> yb, std::vector<std::vector<double>> xb){
     mean_syst = (TH2Poly*)hist->Clone(TString(hist->GetName())+name);
+    std_syst = (TH2Poly*)hist->Clone(TString(hist->GetName())+name+"_stddev");
     sname = TString(mean_syst->GetName());
-    mean_syst->ClearBinContents();
+    if(name!="_totalsyst") mean_syst->ClearBinContents();
+    std_syst->ClearBinContents();
     ybins = yb;
     xbins = xb;
     size_t nbins = mean_syst->GetNumberOfBins();
@@ -40,6 +43,9 @@ class Systematics2D
       uni_s.push_back(SlicePoly(universes[u], i, Form(slice_name+"_uni%i", (int)u), ybins, xbins));
     }
     TH1D* mean_s = SlicePoly(mean_syst, i, slice_name, ybins, xbins);
+    // Need to get the errors separately
+    TH1D* std_s = SlicePoly(std_syst, i, slice_name+"_stddev", ybins, xbins);
+    for(size_t x = 1; x <= mean_s->GetNbinsX(); x++) mean_s->SetBinError(x, std_s->GetBinContent(x));
     Systematics* syst_s = new Systematics(sname, uni_s, mean_s);
     return syst_s;
   }
@@ -80,8 +86,8 @@ class Systematics2D
       for(size_t i = 1; i <= nbins; i++){
         for(size_t j = 1; j <= nbins; j++){
           if(i==j){ 
-            covariance->SetBinContent(i, j, pow(mean_syst->GetBinError(i),2));
-            frac_covariance->SetBinContent(i, j, pow(mean_syst->GetBinError(i),2)/pow(mean_syst->GetBinContent(i),2));
+            covariance->SetBinContent(i, j, pow(std_syst->GetBinContent(i), 2));
+            frac_covariance->SetBinContent(i, j, pow(std_syst->GetBinContent(i),2)/pow(mean_syst->GetBinContent(i),2));
             correlation->SetBinContent(i, j, 1.);
           }
         }
@@ -106,7 +112,8 @@ class Systematics2D
       }
       std_dev = std::sqrt(std_dev/(universes.size()-1));
       mean_syst->SetBinContent(i, mean);
-      mean_syst->SetBinError(i, std_dev);
+      std_syst->SetBinContent(i, std_dev);
+      std::cout<<"cont = "<<mean_syst->GetBinContent(i)<<" err = "<<std_syst->GetBinContent(i)<<"\n";
     }
 
 

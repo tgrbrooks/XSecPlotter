@@ -72,13 +72,18 @@ std::vector<double> ChangeBinning(TH1D* hist, double max, double err){
   return bin_edges;
 }
 
-std::vector<double> GetBinning(std::vector<double> data, double err, std::string var){
+std::vector<double> GetBinning(std::vector<double> data, double err, std::string var, double scale, bool twoD=false){
   std::map<std::string, double> mins = {{"mom", 0}, {"theta", -1}, {"phi", -180}, {"vise", 0}, {"ntracks", 0}};
   std::map<std::string, double> maxs = {{"mom", 2}, {"theta", 1}, {"phi", 180}, {"vise", 3}, {"ntracks", 7}};
-  std::map<std::string, double> nbins = {{"mom", 100}, {"theta", 100}, {"phi", 100}, {"vise", 100}, {"ntracks", 7}};
-  TH1D* hist = new TH1D("temp_hist", "", nbins[var], mins[var], maxs[var]);
+  std::map<std::string, double> nbins = {{"mom", 50}, {"theta", 50}, {"phi", 50}, {"vise", 50}, {"ntracks", 7}};
+  double nb = nbins[var];
+  if(twoD && var!="ntracks") nb = nb * 2./5.;
+  TH1D* hist = new TH1D("temp_hist", "", nb, mins[var], maxs[var]);
   for(auto const& d : data){
     hist->Fill(d);
+  }
+  for(size_t i = 1; i <= hist->GetNbinsX(); i++){
+    hist->SetBinContent(i, hist->GetBinContent(i)*scale);
   }
   std::vector<double> binning = ChangeBinning(hist, maxs[var], err);
   delete hist;
@@ -100,7 +105,7 @@ std::vector<std::vector<double>> ChangeBinning2D(TH2D* hist, std::vector<double>
   return all_edges;
 }
 
-std::vector<std::vector<double>> GetBinning2D(std::vector<double> data_i, std::vector<double> data_j, std::vector<double> xbins, std::vector<double> ybins, double err){
+std::vector<std::vector<double>> GetBinning2D(std::vector<double> data_i, std::vector<double> data_j, std::vector<double> xbins, std::vector<double> ybins, double err, double scale){
 
   // Perform two dimensional rebinning
   double xedges_array[xbins.size()];
@@ -113,6 +118,11 @@ std::vector<std::vector<double>> GetBinning2D(std::vector<double> data_i, std::v
   for(size_t i = 0; i < data_i.size(); i++){
     temp_hist->Fill(data_i[i], data_j[i]);
   }
+  for(size_t i = 1; i <= temp_hist->GetNbinsX(); i++){
+    for(size_t j = 1; j <= temp_hist->GetNbinsY(); j++){
+      temp_hist->SetBinContent(i, j, temp_hist->GetBinContent(i, j)*scale);
+    }
+  }
   std::vector<std::vector<double>> all_bin_edges = ChangeBinning2D(temp_hist, xbins, err);
   delete temp_hist;
   
@@ -121,7 +131,6 @@ std::vector<std::vector<double>> GetBinning2D(std::vector<double> data_i, std::v
 
 TH2D* Covariance(std::vector<TH1D*> universes){
 
-  TH1D *mean_syst = (TH1D*) universes[0]->Clone();
   int nbins = universes[0]->GetNbinsX();
   TString name = TString(universes[0]->GetName())+"cov";
   TH2D* covariance = new TH2D(name, "", nbins, 1, nbins+1, nbins, 1, nbins+1);
@@ -139,8 +148,6 @@ TH2D* Covariance(std::vector<TH1D*> universes){
       std_dev += std::pow(universes[ns]->GetBinContent(n) - mean, 2.);
     }
     std_dev = std::sqrt(std_dev/(universes.size()-1));
-    mean_syst->SetBinContent(n, mean);
-    mean_syst->SetBinError(n, std_dev);
   }
 
   // Calculate the covariance and correlation over all universes
@@ -161,7 +168,6 @@ TH2D* Covariance(std::vector<TH1D*> universes){
 
 TH2D* Covariance2D(std::vector<TH2Poly*> universes){
 
-  TH2Poly *mean_syst = (TH2Poly*) universes[0]->Clone();
   int nbins = universes[0]->GetNumberOfBins();
   TString name = TString(universes[0]->GetName())+"cov";
   TH2D* covariance = new TH2D(name, "", nbins, 1, nbins+1, nbins, 1, nbins+1);
@@ -179,8 +185,6 @@ TH2D* Covariance2D(std::vector<TH2Poly*> universes){
       std_dev += std::pow(universes[ns]->GetBinContent(n) - mean, 2.);
     }
     std_dev = std::sqrt(std_dev/(universes.size()-1));
-    mean_syst->SetBinContent(n, mean);
-    mean_syst->SetBinError(n, std_dev);
   }
 
   // Calculate the covariance and correlation over all universes
@@ -256,7 +260,7 @@ double ChiSquare2D(TH2Poly* data, TH2Poly* mc, TH2D* covariance){
 // Main
 void Variables(){
 
-  gStyle->SetPalette(1);
+  gStyle->SetPalette(kBlueGreenYellow);
 
   // Read in fake data
   std::vector<double> data_mom;
@@ -298,30 +302,30 @@ void Variables(){
     data_pot += *pot_val;
   }
 
+  double data_scale = 6.6e20/data_pot;
+
   // Bin fake data in 1D according to percentage statistical error per bin
   // Create an array of 1D histograms
   std::vector<std::string> vars = {"mom", "theta", "phi", "vise", "ntracks"};
   std::vector<TString> va = {"P [GeV]", "cos #theta", "#phi [rad]", "E_{visible} [GeV]", "N tracks"};
   std::vector<TString> vs = {"P", "c#theta", "#phi", "E", "NT"};
   std::vector<TH1D*> hists;
-  std::vector<std::vector<double>> edges;
   for(size_t i = 0; i < vars.size(); i++){
-    std::vector<double> bin_edges = GetBinning(data[i], 0.01, vars[i]);
+    std::vector<double> bin_edges = GetBinning(data[i], 0.01, vars[i], data_scale);
     double edges_array[bin_edges.size()];
     std::copy(bin_edges.begin(), bin_edges.end(), edges_array);
     TH1D* hist = new TH1D(vars[i].c_str()+TString("_hist"), "", bin_edges.size()-1, edges_array);
     hists.push_back(hist);
-    edges.push_back(bin_edges);
   }
 
   std::vector<TH2Poly*> hists_2D;
   std::vector<std::pair<size_t, size_t>> ind_2D;
   for(size_t i = 0; i < vars.size(); i++){
-    std::vector<double> xbins = edges[i];
+    std::vector<double> xbins = GetBinning(data[i], 0.01/3, vars[i], data_scale, true);
     for(size_t j = 0; j < vars.size(); j++){
       if(i==j) continue;
-      std::vector<double> ybins = edges[j];
-      std::vector<std::vector<double>> xedges = GetBinning2D(data[i], data[j], xbins, ybins, 0.05);
+      std::vector<double> ybins = GetBinning(data[j], 0.01/3, vars[j], data_scale, true);;
+      std::vector<std::vector<double>> xedges = GetBinning2D(data[i], data[j], xbins, ybins, 0.01, data_scale);
       TH2Poly* hist = new TH2Poly();
       hist->SetName((vars[i]+vars[j]).c_str());
       hist->SetTitle("");
@@ -334,6 +338,9 @@ void Variables(){
       for(size_t n = 0; n < data[i].size(); n++){
         hist->Fill(data[i][n], data[j][n]);
       }
+      for(size_t x = 1; x <= hist->GetNumberOfBins(); x++){
+        hist->SetBinContent(x, hist->GetBinContent(x)*data_scale);
+      }
       hists_2D.push_back(hist);
       ind_2D.push_back(std::make_pair(i, j));
     }
@@ -344,20 +351,23 @@ void Variables(){
     for(auto const& d : data[i]){
       hists[i]->Fill(d);
     }
+    for(size_t x = 1; x <= hists[i]->GetNbinsX(); x++){
+      hists[i]->SetBinContent(x, hists[i]->GetBinContent(x)*data_scale);
+    }
   }
 
   // Read in MC and fill equivalent histograms
   std::vector<TH1D*> mc_hists;
   for(size_t i = 0; i < hists.size(); i++){
-    double edges_array[edges[i].size()];
-    std::copy(edges[i].begin(), edges[i].end(), edges_array);
-    TH1D* mc_hist = new TH1D(vars[i].c_str()+TString("_mc"), "", edges[i].size()-1, edges_array);
+    TH1D* mc_hist = (TH1D*) hists[i]->Clone();
+    mc_hist->Reset();
     mc_hists.push_back(mc_hist);
   }
 
   std::vector<TH2Poly*> mc_hists_2D;
   for(size_t i = 0; i < hists_2D.size(); i++){
     TH2Poly* mc_hist = (TH2Poly*) hists_2D[i]->Clone();
+    mc_hist->ClearBinContents();
     mc_hists_2D.push_back(mc_hist);
   }
   
@@ -411,16 +421,17 @@ void Variables(){
     mc_pot += *mc_pot_val;
   }
   std::cout<<"data pot = "<<data_pot<<" mc = "<<mc_pot<<" Ratio = "<<data_pot/mc_pot<<"\n";
+  double mc_scale = 6.6e20/mc_pot;
 
   // Scale MC to data POT 
   for(size_t i = 0; i < hists.size(); i++){
-    for(size_t j = 0; j < hists[i]->GetNbinsX(); j++){
-      mc_hists[i]->SetBinContent(j, mc_hists[i]->GetBinContent(j)*data_pot/mc_pot);
+    for(size_t j = 0; j <= hists[i]->GetNbinsX(); j++){
+      mc_hists[i]->SetBinContent(j, mc_hists[i]->GetBinContent(j)*mc_scale);
     }
   }
   for(size_t i = 0; i < mc_hists_2D.size(); i++){
-    for(size_t j = 0; j < mc_hists_2D[i]->GetNumberOfBins(); j++){
-      mc_hists_2D[i]->SetBinContent(j, mc_hists_2D[i]->GetBinContent(j)*data_pot/mc_pot);
+    for(size_t j = 0; j <= mc_hists_2D[i]->GetNumberOfBins(); j++){
+      mc_hists_2D[i]->SetBinContent(j, mc_hists_2D[i]->GetBinContent(j)*mc_scale);
     }
   }
   
@@ -441,22 +452,24 @@ void Variables(){
       }
       // Stat errors
       double serror = pow(hists[i]->GetBinError(j), 2.);
-      //cov->SetBinContent(j, j, perror+serror);
-      cov->SetBinContent(j, j, serror);
+      cov->SetBinContent(j, j, perror+serror);
     }
     // Genie and flux reweighting systematics
     std::vector<TH1D*> genie_v;
     std::vector<TH1D*> flux_v;
     for(size_t j = 0; j < 100; j++){
       TH1D* genie_tmp = (TH1D*)hists[i]->Clone("genie");
+      genie_tmp->Reset();
       genie_v.push_back(genie_tmp);
       TH1D* flux_tmp = (TH1D*)hists[i]->Clone("flux");
+      flux_tmp->Reset();
       flux_v.push_back(flux_tmp);
     }
     // Detector variation systematics
     std::vector<TH1D*> det_v;
     for(size_t j = 0; j < 50; j++){
       TH1D* det_tmp = (TH1D*)hists[i]->Clone("det");
+      det_tmp->Reset();
       det_v.push_back(det_tmp);
     }
     genie.push_back(genie_v);
@@ -488,14 +501,17 @@ void Variables(){
     std::vector<TH2Poly*> flux_v;
     for(size_t j = 0; j < 100; j++){
       TH2Poly* genie_tmp = (TH2Poly*)hists_2D[i]->Clone("genie2D");
+      genie_tmp->ClearBinContents();
       genie_v.push_back(genie_tmp);
       TH2Poly* flux_tmp = (TH2Poly*)hists_2D[i]->Clone("flux2D");
+      flux_tmp->ClearBinContents();
       flux_v.push_back(flux_tmp);
     }
     // Detector variation systematics
     std::vector<TH2Poly*> det_v;
     for(size_t j = 0; j < 50; j++){
       TH2Poly* det_tmp = (TH2Poly*)hists_2D[i]->Clone("det2D");
+      det_tmp->ClearBinContents();
       det_v.push_back(det_tmp);
     }
     genie_2D.push_back(genie_v);
@@ -503,7 +519,7 @@ void Variables(){
     det_2D.push_back(det_v);
     covariances_2D.push_back(cov);
   }
-/*
+
   // Get the reweighting from file
   TTreeReader weight_reader("XSecTree/weight", &mc_file);
   TTreeReaderArray<double> gw(weight_reader, "genie_weights");
@@ -562,17 +578,17 @@ void Variables(){
   }
 
   // Scale each varied histogram to the data POT
-  for(size_t i = 0; i < hists.size(); i++){
+  for(size_t i = 0; i < mc_hists.size(); i++){
     // Scale hists first
     for(size_t j = 0; j < 100; j++){
       for(size_t k = 1; k <= genie[i][j]->GetNbinsX(); k++){
-        genie[i][j]->SetBinContent(k, genie[i][j]->GetBinContent(k)*data_pot/mc_pot);
-        flux[i][j]->SetBinContent(k, flux[i][j]->GetBinContent(k)*data_pot/mc_pot);
+        genie[i][j]->SetBinContent(k, genie[i][j]->GetBinContent(k)*mc_scale);
+        flux[i][j]->SetBinContent(k, flux[i][j]->GetBinContent(k)*mc_scale);
       }
     }
     for(size_t j = 0; j < 50; j++){
       for(size_t k = 1; k <= det[i][j]->GetNbinsX(); k++){
-        det[i][j]->SetBinContent(k, det[i][j]->GetBinContent(k)*data_pot/mc_pot);
+        det[i][j]->SetBinContent(k, det[i][j]->GetBinContent(k)*mc_scale);
       }
     }
     // Calculate covariance matrices and add up
@@ -591,13 +607,13 @@ void Variables(){
     // Scale hists first
     for(size_t j = 0; j < 100; j++){
       for(size_t k = 1; k <= genie_2D[i][j]->GetNumberOfBins(); k++){
-        genie_2D[i][j]->SetBinContent(k, genie_2D[i][j]->GetBinContent(k)*data_pot/mc_pot);
-        flux_2D[i][j]->SetBinContent(k, flux_2D[i][j]->GetBinContent(k)*data_pot/mc_pot);
+        genie_2D[i][j]->SetBinContent(k, genie_2D[i][j]->GetBinContent(k)*mc_scale);
+        flux_2D[i][j]->SetBinContent(k, flux_2D[i][j]->GetBinContent(k)*mc_scale);
       }
     }
     for(size_t j = 0; j < 50; j++){
       for(size_t k = 1; k <= det_2D[i][j]->GetNumberOfBins(); k++){
-        det_2D[i][j]->SetBinContent(k, det_2D[i][j]->GetBinContent(k)*data_pot/mc_pot);
+        det_2D[i][j]->SetBinContent(k, det_2D[i][j]->GetBinContent(k)*mc_scale);
       }
     }
     // Calculate covariance matrices and add up
@@ -611,7 +627,7 @@ void Variables(){
     covariances_2D[i]->Add(det_cov);
     delete det_cov;
   }
-*/
+
   // Calculate chi2 between data and MC for each histogram
   std::vector<double> chis;
   for(size_t i = 0; i < hists.size(); i++){
@@ -621,28 +637,29 @@ void Variables(){
 
     // Plot all the histogram variations
     TCanvas *c1 = new TCanvas(Form("canvas%i", (int)i), "", 900, 600);
-    TH1D* error_hist = (TH1D*)hists[i]->Clone();
-    error_hist->Reset();
-    for(size_t j = 1; j <= hists[i]->GetNbinsX(); j++){
-      error_hist->SetBinContent(j, mc_hists[i]->GetBinContent(j));
+    TH1D* error_hist = (TH1D*)mc_hists[i]->Clone();
+    for(size_t j = 1; j <= mc_hists[i]->GetNbinsX(); j++){
       error_hist->SetBinError(j, sqrt(covariances[i]->GetBinContent(j, j)-pow(hists[i]->GetBinError(j),2)));
     }
+    mc_hists[i]->SetLineColor(42);
+    mc_hists[i]->SetMarkerSize(0);
+    mc_hists[i]->Scale(1., "width");
+    mc_hists[i]->GetXaxis()->SetTitle(va[i]);
+    mc_hists[i]->GetYaxis()->SetTitle("Events (/bin width)");
+    mc_hists[i]->Draw("HIST");
     error_hist->SetLineWidth(0);
     error_hist->SetMarkerStyle(0);
     error_hist->SetFillColor(15);
     error_hist->SetFillStyle(3001);
     error_hist->Scale(1., "width");
-    error_hist->GetXaxis()->SetTitle("P [GeV]");
-    error_hist->GetYaxis()->SetTitle("Events (/bin width)");
-    error_hist->Draw("E2");
-    mc_hists[i]->SetLineColor(42);
-    mc_hists[i]->SetMarkerSize(0);
-    mc_hists[i]->Scale(1., "width");
-    mc_hists[i]->Draw("HIST SAME");
+    error_hist->Draw("E2 SAME");
     hists[i]->SetLineColor(46);
     hists[i]->SetMarkerSize(0);
     hists[i]->Scale(1., "width");
     hists[i]->Draw("HIST E1 SAME");
+    int maxbin = mc_hists[i]->GetMaximumBin();
+    double ymax = mc_hists[i]->GetBinContent(maxbin);
+    mc_hists[i]->GetYaxis()->SetRangeUser(0, 1.1*ymax);
     TLegend* legend = new TLegend(0.7, 0.73, 0.92, 0.89);
     legend->SetFillStyle(0);
     legend->AddEntry(hists[i], "Fake data", "l");

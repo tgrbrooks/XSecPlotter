@@ -67,22 +67,24 @@ class SystCalculator
     // Total systematics
     double err = config->constant_syst;
     for(size_t n = 1; n <= histman->total->total_hist->GetNbinsX(); n++){
+      histman->total->systematics->constant->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
       histman->total->systematics->constant->mean_syst->SetBinError(n, err*histman->total->total_hist->GetBinContent(n));
     }
 
     // 1D systematics
     for(auto& kv1D : histman->histos_1D){
       for(size_t n = 1; n <= kv1D.second->total_hist->GetNbinsX(); n++){
+        kv1D.second->systematics->constant->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
         kv1D.second->systematics->constant->mean_syst->SetBinError(n, err*kv1D.second->total_hist->GetBinContent(n));
       }
     }
 
     // 2D systematics
-    for(auto const& kv2D : histman->histos_2D){
-      for(size_t i = 1; i <= kv2D.second->total_hist->GetNbinsX(); i++){
-        for(size_t j = 1; j <= kv2D.second->total_hist->GetNbinsY(); j++){
-          histman->histos_2D[kv2D.first]->systematics->constant->mean_syst->SetBinError(i, j, err*kv2D.second->total_hist->GetBinContent(i,j));
-        }
+    for(auto& kv2D : histman->histos_2D){
+      for(size_t n = 1; n <= kv2D.second->total_hist->GetNumberOfBins(); n++){
+        //Setting bin error for TH2Poly makes mad things happen! Just use another one for errors
+        kv2D.second->systematics->constant->mean_syst->SetBinContent(n, kv2D.second->total_hist->GetBinContent(n));
+        kv2D.second->systematics->constant->std_syst->SetBinContent(n, err*kv2D.second->total_hist->GetBinContent(n));
       }
     }
 
@@ -140,6 +142,7 @@ class SystCalculator
     double tot_cos_esq = std::pow(TotalBkgError(hMomCos), 2);
     double total_err = std::sqrt(tot_dirt_esq + tot_cos_esq);
     for(size_t n = 1; n <= histman->total->total_hist->GetNbinsX(); n++){
+      histman->total->systematics->background->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
       histman->total->systematics->background->mean_syst->SetBinError(n, total_err);
     }
 
@@ -154,15 +157,18 @@ class SystCalculator
           double cos_sub_err = BkgSubtractionError(mid, width, hMomCos);
           double dirt_sub_err = BkgSubtractionError(mid, width, hMomDirt);
           double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
+          kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
           kv1D.second->systematics->background->mean_syst->SetBinError(n, tot_err);
         }
         else if(kv1D.first=="cos_lep_theta"){
           double cos_sub_err = BkgSubtractionError(mid, width, hCosThetaCos);
           double dirt_sub_err = BkgSubtractionError(mid, width, hCosThetaDirt);
           double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
+          kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
           kv1D.second->systematics->background->mean_syst->SetBinError(n, tot_err);
         }
         else{
+          kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
           kv1D.second->systematics->background->mean_syst->SetBinError(n, 0.01*kv1D.second->total_hist->GetBinContent(n));
         }
       }
@@ -170,10 +176,9 @@ class SystCalculator
 
     // 2D systematics TODO Add 2D systematics properly
     for(auto& kv2D : histman->histos_2D){
-      for(size_t i = 1; i <= kv2D.second->total_hist->GetNbinsX(); i++){
-        for(size_t j = 1; j <= kv2D.second->total_hist->GetNbinsY(); j++){
-          kv2D.second->systematics->background->mean_syst->SetBinError(i, j, 0.01*kv2D.second->total_hist->GetBinContent(i,j));
-        }
+      for(size_t i = 1; i <= kv2D.second->total_hist->GetNumberOfBins(); i++){
+        kv2D.second->systematics->background->mean_syst->SetBinContent(i, kv2D.second->total_hist->GetBinContent(i));
+        kv2D.second->systematics->background->std_syst->SetBinContent(i, 0.01*kv2D.second->total_hist->GetBinContent(i));
       }
     }
 

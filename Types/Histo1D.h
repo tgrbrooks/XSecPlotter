@@ -67,7 +67,7 @@ class Histo1D
     response = new TH2D(name+"_response", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
 
     // Initialise empty systematics
-    systematics = new SystSummary(empty);
+    systematics = new SystSummary(total_hist);
   }
 
   // Constructor (used for 1D slices of 2D histograms)

@@ -23,8 +23,6 @@ class SystSummary
     background = new Systematics(hist, "_bkgsyst");
     constant = new Systematics(hist, "_constsyst");
     total = new Systematics(hist, "_totalsyst");
-    //total = (TH1D*)hist->Clone(TString(hist->GetName())+"_totalsyst");
-    //total->Reset();
   }
 
   // Constructor (for 1D slices)
@@ -36,16 +34,6 @@ class SystSummary
     background = b;
     constant = c;
     total = t;
-
-/*
-    total = (TH1D*)genie->mean_syst->Clone();
-    total->Reset();
-    AddErrors(total, genie->mean_syst);
-    AddErrors(total, flux->mean_syst);
-    AddErrors(total, detector->mean_syst);
-    AddErrors(total, background->mean_syst);
-    AddErrors(total, constant->mean_syst);
-*/
   }
 
   Systematics* GetSyst(TString name){
@@ -60,6 +48,7 @@ class SystSummary
 
   // Calculate the total error assuming uncorrelated
   void GetTotal(){
+    ClearErrors(total);
     AddSyst(total, genie);
     AddSyst(total, flux);
     AddSyst(total, detector);
@@ -76,6 +65,12 @@ class SystSummary
         total->frac_covariance->SetBinContent(i, j, cov_ij/(cv_i*cv_j));
         total->correlation->SetBinContent(i, j, cov_ij/(s_ii*s_jj));
       }
+    }
+  }
+
+  void ClearErrors(Systematics* s1){
+    for(size_t i = 1; i <= s1->mean_syst->GetNbinsX(); i++){
+      s1->mean_syst->SetBinError(i, 0);
     }
   }
 

@@ -54,7 +54,7 @@ void MultiPlots(){
 
   // Get the configuration file
   std::cout<<"Reading the config file...\n";
-  std::string input_file = "multiconfig.txt";
+  std::string input_file = "config.txt";
   Configuration *config = new Configuration(input_file);
   config->GetMetaData();
   std::cout<<"...Finished.\n";

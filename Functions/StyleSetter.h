@@ -26,6 +26,14 @@ void SetStyle(){
   gStyle->SetFrameLineWidth(line_width);
   gStyle->SetGridWidth(line_width);
   gStyle->SetLineWidth(line_width);
+  // Title
+  gStyle->SetTitleStyle(0);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetTitleX(0.0);
+  gStyle->SetTitleY(1.0); 
+  gStyle->SetTitleW(1.0);
+  gStyle->SetTitleH(0.075);
   // Fonts
   gStyle->SetTitleFont(font, "title");
   gStyle->SetTitleFont(font, "x");

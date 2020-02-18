@@ -278,7 +278,7 @@ class Plotter
           double stat_error = 0;
           if(config->show_stat_error) stat_error = error_hist->GetBinError(n);
           double syst_error = 0;
-          if(config->show_syst_error) syst_error = histos[file_i]->systematics->GetSyst("total")->mean_syst->GetBinError(n);
+          if(config->show_syst_error) syst_error = histos[file_i]->systematics->GetSyst(systname)->mean_syst->GetBinError(n);
           error_hist->SetBinError(n, std::sqrt(std::pow(syst_error, 2) + std::pow(stat_error, 2)));
         }
         error_hist->SetLineWidth(0);

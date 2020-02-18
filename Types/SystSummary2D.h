@@ -53,22 +53,22 @@ class SystSummary2D
         double s_jj = std::sqrt(total->covariance->GetBinContent(j, j));
         total->frac_covariance->SetBinContent(i, j, cov_ij/(cv_i*cv_j));
         total->correlation->SetBinContent(i, j, cov_ij/(s_ii*s_jj));
-        if(cov_ij==0||(s_ii*s_jj)==0||isnan(s_ii*s_jj)) total->correlation->SetBinContent(i, j, 0.000001);
+        //if(cov_ij==0||(s_ii*s_jj)==0||isnan(s_ii*s_jj)) total->correlation->SetBinContent(i, j, 0.000001);
         if(i==j) total->correlation->SetBinContent(i, j, 1);
       }
     }
   }
 
   void AddSyst(Systematics2D* s1, Systematics2D* s2){
-    AddErrors(s1->mean_syst, s2->mean_syst);
+    AddErrors(s1->std_syst, s2->std_syst);
     s1->covariance->Add(s2->covariance);
   }
 
   // Add histogram errors in quadrature, ignoring bin contents
   void AddErrors(TH2Poly* syst_hist, TH2Poly* hist){
     for(size_t i = 1; i <= syst_hist->GetNumberOfBins(); i++){
-      double new_err = std::sqrt(std::pow(syst_hist->GetBinError(i),2)+std::pow(hist->GetBinError(i),2));
-      syst_hist->SetBinError(i, new_err);
+      double new_err = std::sqrt(std::pow(syst_hist->GetBinContent(i),2)+std::pow(hist->GetBinContent(i),2));
+      syst_hist->SetBinContent(i, new_err);
     }
   }
 

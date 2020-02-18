@@ -81,7 +81,7 @@ class Systematics
 
     // Calculate the mean and standard deviation for each bin over all universes
     std::vector<double> means;
-    for(size_t n = 1; n <= universes[0]->GetNbinsX(); n++){
+    for(int n = 1; n <= universes[0]->GetNbinsX(); n++){
       double mean = 0;
       for(size_t ns = 0; ns < universes.size(); ns++){
         mean += universes[ns]->GetBinContent(n);

@@ -44,10 +44,10 @@ class SystSummary2D
 
     int nbins = total->mean_syst->GetNumberOfBins();
 
-    for(size_t i = 1; i <= nbins; i++){
+    for(int i = 1; i <= nbins; i++){
       double cv_i = total->mean_syst->GetBinContent(i);
       double s_ii = std::sqrt(total->covariance->GetBinContent(i, i));
-      for(size_t j = 1; j <= nbins; j++){
+      for(int j = 1; j <= nbins; j++){
         double cov_ij = total->covariance->GetBinContent(i, j);
         double cv_j = total->mean_syst->GetBinContent(j);
         double s_jj = std::sqrt(total->covariance->GetBinContent(j, j));
@@ -66,7 +66,7 @@ class SystSummary2D
 
   // Add histogram errors in quadrature, ignoring bin contents
   void AddErrors(TH2Poly* syst_hist, TH2Poly* hist){
-    for(size_t i = 1; i <= syst_hist->GetNumberOfBins(); i++){
+    for(int i = 1; i <= syst_hist->GetNumberOfBins(); i++){
       double new_err = std::sqrt(std::pow(syst_hist->GetBinContent(i),2)+std::pow(hist->GetBinContent(i),2));
       syst_hist->SetBinContent(i, new_err);
     }

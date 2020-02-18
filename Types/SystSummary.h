@@ -55,10 +55,10 @@ class SystSummary
     AddSyst(total, background);
     AddSyst(total, constant);
 
-    for(size_t i = 1; i <= total->mean_syst->GetNbinsX(); i++){
+    for(int i = 1; i <= total->mean_syst->GetNbinsX(); i++){
       double cv_i = total->mean_syst->GetBinContent(i);
       double s_ii = std::sqrt(total->covariance->GetBinContent(i, i));
-      for(size_t j = 1; j <= total->mean_syst->GetNbinsX(); j++){
+      for(int j = 1; j <= total->mean_syst->GetNbinsX(); j++){
         double cov_ij = total->covariance->GetBinContent(i, j);
         double cv_j = total->mean_syst->GetBinContent(j);
         double s_jj = std::sqrt(total->covariance->GetBinContent(j, j));
@@ -69,7 +69,7 @@ class SystSummary
   }
 
   void ClearErrors(Systematics* s1){
-    for(size_t i = 1; i <= s1->mean_syst->GetNbinsX(); i++){
+    for(int i = 1; i <= s1->mean_syst->GetNbinsX(); i++){
       s1->mean_syst->SetBinError(i, 0);
     }
   }
@@ -81,7 +81,7 @@ class SystSummary
 
   // Add histogram errors in quadrature, ignoring bin contents
   void AddErrors(TH1D* syst_hist, TH1D* hist){
-    for(size_t i = 1; i <= syst_hist->GetNbinsX(); i++){
+    for(int i = 1; i <= syst_hist->GetNbinsX(); i++){
       double new_err = std::sqrt(std::pow(syst_hist->GetBinError(i),2)+std::pow(hist->GetBinError(i),2));
       syst_hist->SetBinError(i, new_err);
     }

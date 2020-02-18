@@ -264,15 +264,15 @@ class HistManager
 
     // Create the response matrix 
     // Loop over the true bins from the first to last
-    for(size_t bin_j = 1; bin_j <= nbins; bin_j++){
+    for(int bin_j = 1; bin_j <= nbins; bin_j++){
       // Calculate the total number of events generated in bin j
       double total = 0;
       // Loop over the reco bins including underflow and overflow
-      for(size_t bin_i = 0; bin_i <= nbins; bin_i++){
+      for(int bin_i = 0; bin_i <= nbins; bin_i++){
         total += (double)response->GetBinContent(bin_j, bin_i);
       }   
       // Loop over the reco bins again and fill with number of events in reco bin from true bin / total in true bin
-      for(size_t bin_i = 1; bin_i <= nbins; bin_i++){
+      for(int bin_i = 1; bin_i <= nbins; bin_i++){
         //std::cout<<"tbin "<<bin_j<<" rbin "<<bin_i<<" total = "<<total<<" nij = "<<response->GetBinContent(bin_j, bin_i)<<"\n";
         histos_2D[key]->response->SetBinContent(bin_j, bin_i, (double)response->GetBinContent(bin_j, bin_i)/total);
         if(response->GetBinContent(bin_j, bin_i)==0){
@@ -334,7 +334,7 @@ class HistManager
     double total;
     TH1D *total_hist = new TH1D(tune+"total", "", 1, 0, 2);
 
-    for (int n = 0; n < dataman->total_data.size(); n++){
+    for (size_t n = 0; n < dataman->total_data.size(); n++){
       total_hist->Fill(1);
       total++;
     }
@@ -358,11 +358,11 @@ class HistManager
     std::copy(bin_edges.begin(), bin_edges.end(), edges_array);
     TH1D *total_hist = new TH1D(tune+config->plot_variables[var_i], "", bin_edges.size()-1, edges_array);
 
-    for (int n = 0; n < dataman->total_data.size(); n++){
+    for (size_t n = 0; n < dataman->total_data.size(); n++){
       total_hist->Fill(dataman->total_data[n][var_i]);
     }
     // Include scale factor bin by bin as ->Scale() won't change errors
-    for(size_t n = 0; n <= total_hist->GetNbinsX(); n++){
+    for(int n = 0; n <= total_hist->GetNbinsX(); n++){
       total_hist->SetBinContent(n, total_hist->GetBinContent(n)*config->pot_scale_fac[file_i]);
     }
     // If plotting cross section convert from rate
@@ -470,11 +470,11 @@ class HistManager
       }
     }
 
-    for (int n = 0; n < dataman->total_data.size(); n++){
+    for (size_t n = 0; n < dataman->total_data.size(); n++){
       total_hist->Fill(dataman->total_data[n][var_i], dataman->total_data[n][var_j]);
     }
     // Include scale factor bin by bin as ->Scale() won't change errors
-    for(size_t i = 0; i <= total_hist->GetNumberOfBins(); i++){
+    for(int i = 0; i <= total_hist->GetNumberOfBins(); i++){
       total_hist->SetBinContent(i, total_hist->GetBinContent(i)*config->pot_scale_fac[file_i]);
     }
     // If plotting cross section convert from rate

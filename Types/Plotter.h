@@ -14,10 +14,8 @@ class Plotter
 {
   public:
 
-  Configuration *config;
-  Titles *titles;
-
-  //Plotter(){}
+  Configuration *config; // Global configuration
+  Titles *titles;        // Histogram title manager
 
   // Constructor
   Plotter(Configuration *c, Titles *t)

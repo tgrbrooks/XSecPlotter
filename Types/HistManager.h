@@ -114,12 +114,12 @@ class HistManager
     int n_1D = histos_1D.size();
     int n_2D = histos_2D.size();
     if(n_2D == 0) return n_1D;
+    n_2D = 1;
     int n_1D_slice = 0;
     bool first = true;
     for(auto const& kv : histos_2D){
       if(!first) continue;
-      n_1D_slice += kv.second->total_hist->GetNbinsX();
-      //n_1D_slice += kv.second->total_hist->GetNbinsY();
+      n_1D_slice += kv.second->ybins.size();
       first = false;
     }
     return n_1D + n_2D + n_1D_slice;
@@ -237,7 +237,7 @@ class HistManager
       for(size_t bin_i = 1; bin_i <= bin_edges.size(); bin_i++){
         histos_1D[key]->response->SetBinContent(bin_j, bin_i, (double)temp_response->GetBinContent(bin_j, bin_i)/total);
         if(temp_response->GetBinContent(bin_j, bin_i)==0){
-          histos_1D[key]->response->SetBinContent(bin_j, bin_i, 0);
+          histos_1D[key]->response->SetBinContent(bin_j, bin_i, 0.00001);
         } 
       }   
     } 
@@ -276,7 +276,7 @@ class HistManager
         //std::cout<<"tbin "<<bin_j<<" rbin "<<bin_i<<" total = "<<total<<" nij = "<<response->GetBinContent(bin_j, bin_i)<<"\n";
         histos_2D[key]->response->SetBinContent(bin_j, bin_i, (double)response->GetBinContent(bin_j, bin_i)/total);
         if(response->GetBinContent(bin_j, bin_i)==0){
-          histos_2D[key]->response->SetBinContent(bin_j, bin_i, 0);
+          histos_2D[key]->response->SetBinContent(bin_j, bin_i, 0.000001);
         } 
       }   
     } 

@@ -7,48 +7,50 @@ class Configuration
   public:
 
   // File configurations
-  std::vector<TString> input_file;
-  std::vector<TString> tune_name;
-  TString output_file;
+  std::vector<TString> input_file; // Input tree files
+  std::vector<TString> tune_name; // Names of tunes/configurations corresponding to each file
+  TString output_file; // Location, seed string and file type of outputs
   // Neutrino interaction configurations
-  std::vector<int> nu_pdg;
-  std::vector<int> is_cc;
-  std::vector<bool> contained_lepton;
-  std::vector<bool> contained_particles;
-  std::vector<double> fiducial;
-  bool plot_by_fsi;
-  std::vector<int> num_protons;
-  std::vector<int> num_pipm;
-  std::vector<int> num_pi0;
-  std::vector<int> interaction_type;
+  std::vector<int> nu_pdg; // Neutrino PDG codes to select
+  std::vector<int> is_cc; // Charged current or neutral current or both
+  std::vector<bool> contained_lepton; // Lepton contained/exiting/both
+  std::vector<bool> contained_particles; // Particles contained/exiting/both
+  std::vector<double> fiducial; // Fiducial volume definition
+  bool plot_by_fsi = false; // Plot by FSI or true interaction type
+  std::vector<int> num_protons; // Number of protons to select
+  std::vector<int> num_pipm; // Number of charged pions to select
+  std::vector<int> num_pi0; // Number of pi0 to select
+  std::vector<int> interaction_type; // True interaction type to select
   // Plotting variable configurations
-  TString stage;
-  std::vector<TString> plot_variables;
-  bool plot_slices;
-  double pot_scale;
+  TString stage = "true"; // Simulation/reconstruction stage to plot
+  std::vector<TString> plot_variables; // Variables to plot in
+  bool plot_slices = false; // Show slices of 2D histogram
+  double pot_scale = -1; // POT to scale to
   // Plotting option configurations
-  bool plot_stacked;
-  TString stack_by;
-  std::vector<double> min_value;
-  std::vector<double> max_value;
-  std::vector<int> num_bins;
-  std::vector<std::vector<double>> bin_edges;
-  double max_error;
-  bool plot_xsec;
-  bool plot_filled;
+  bool plot_stacked = false; // Plot stacked histogram by type
+  TString stack_by = "int"; // Truth label to stack histogram in
+  std::vector<double> min_value; // Min histogram value per plotting variable
+  std::vector<double> max_value; // Max histogram value per plotting variable
+  std::vector<int> num_bins; // Default number of bins per plotting variable
+  std::vector<std::vector<double>> bin_edges; // User defined bin edges
+  double max_error = -1; // Maximum percentage error per bin
+  bool plot_xsec = false; // Plot cross section rather than rate
+  bool plot_filled = false; // Plot filled histograms
   // Optional extras
-  bool show_info;
-  bool show_error_band;
-  bool show_stat_error;
-  bool show_syst_error;
-  std::vector<TString> systematics;
-  double constant_syst;
-  bool show_error_bars;
-  bool plot_correlation;
-  bool plot_universes;
-  bool plot_eff_pur;
-  bool plot_response; //TODO
-  bool unfold; //TODO
+  bool show_info = false; // Show extra info on plots
+  bool show_error_band = false; // Show percentage error band under plot
+  bool show_stat_error = false; // Show statistical uncertainties
+  bool show_syst_error = false; // Calculate and show systematic uncertainties
+  std::vector<TString> systematics; // Systematics to apply
+  double constant_syst = 0; // Flat systematic uncertainty
+  int detector_nuni = 50; // Number of universes for detector systematics
+  int reweight_nuni = 100; // Number of universes for reweighting systematics
+  bool show_error_bars = false; // Show error bars on plots
+  bool plot_correlation = false; // Plot systematic correlation/covariance matrices
+  bool plot_universes = false; // Plot universe variations
+  bool plot_eff_pur = false; // Plot efficiency and purity
+  bool plot_response = false; // Plot response matrix
+  bool unfold = false; //TODO
 
   // Set by functions
   std::vector<double> pot;

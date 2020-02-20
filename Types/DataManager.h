@@ -10,14 +10,14 @@ class DataManager
 {
   public:
 
-  Configuration *config;
+  Configuration *config; // Global configurations
 
-  size_t file_i;
+  size_t file_i; // Input file index
 
-  std::vector<Interaction> interactions;
-  std::map<std::string, std::vector<std::vector<double>>> stack_data;
-  std::vector<std::vector<double>> total_data;
-  std::vector<bool> data_used;
+  std::vector<Interaction> interactions; // Structure holding info about each interaction
+  std::map<std::string, std::vector<std::vector<double>>> stack_data; // Unbinned plotting variables by stacked hist type
+  std::vector<std::vector<double>> total_data; // Unbinned plotting variables
+  std::vector<bool> data_used; // Flag for if data is selected
 
   // Constructor
   DataManager(Configuration *c, size_t f)
@@ -55,7 +55,7 @@ class DataManager
   std::vector<Interaction> ReadData(int i){
 
     // Open the root tree
-    TFile data_file(config->input_file[i]);
+    TFile data_file(config->input_file[i], "READ");
     if(!data_file.IsOpen()){
       std::cout<<"Could not read input file!\n";
       exit(1);

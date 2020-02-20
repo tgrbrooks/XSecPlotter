@@ -14,13 +14,13 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_v3rwt.root, Trees/xsectree_v2rwt.root
+InputFile: Trees/xsectree_v3rwt.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv3_, GENIEv2_
+TuneName: GENIEv3_
 
 // Name of output file (.root for modifiable canvas)
-OutputFile: temp/2D.png
+OutputFile: temp/1D.png
 
 //------------------------------------------------------------------------
 //          Select neutrino interaction (commas for multiple)
@@ -92,7 +92,7 @@ Stage: reco
 //- delta_alphat (transverse kinematic variable) [rad]
 //- delta_phit (transverse kinematic variable) [rad]
 
-PlotVariable: cos_lep_theta, lep_mom
+PlotVariable: cos_lep_theta
 
 // Save the plots for each variable
 PlotSlices: false
@@ -110,16 +110,16 @@ PlotStacked: false
 StackBy: int
 
 // Minimum bin (-1 for min tree value)
-MinValue: -1, 0
+MinValue: -1
 
 // Maximum bin (-1 for max tree value)
-MaxValue: 1, 2
+MaxValue: 1
 
 // Number of bins (-1 for automatic)
-NumBins: 20, 20
+NumBins: 50
 
 // Bin edges (separate edges with , and plot variables in [] brackets)
-BinEdges: [-1], [-1]
+BinEdges: [-1]
 
 // Maximum percentage error per bin (0->1, -1 for none) (merges bins)
 MaxError: 0.01
@@ -146,7 +146,7 @@ ShowStatError: true
 ShowSystError: true
 
 // List of systematics to include (genie, flux, detector, background, constant)
-Systematics: genie, flux, detector, background, constant
+Systematics: flux
 
 // Value of constant percentage systematic error (0->1)
 ConstantSyst: 0.027
@@ -155,10 +155,10 @@ ConstantSyst: 0.027
 ShowErrorBars: true
 
 // Produce covariance and correlation matrices for systematic errors (true)
-PlotCorrelation: false
+PlotCorrelation: true
 
 // Plot all of the different universes for systematic uncertainties
-PlotUniverses: false
+PlotUniverses: true
 
 // Produce efficiency and purity plots (true)
 PlotEffPur: false

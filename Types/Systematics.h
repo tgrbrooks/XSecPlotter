@@ -17,7 +17,7 @@ class Systematics
   Systematics(TH1D* hist, TString name){
     mean_syst = (TH1D*)hist->Clone(TString(hist->GetName())+name);
     sname = TString(mean_syst->GetName());
-    if(name!="_totalsyst") mean_syst->Reset();
+    //if(name!="_totalsyst") mean_syst->Reset();
     size_t nbins = mean_syst->GetNbinsX();
     covariance = new TH2D(sname+"_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
     frac_covariance = new TH2D(sname+"_frac_covariance", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
@@ -77,7 +77,7 @@ class Systematics
       return;
     }
 
-    mean_syst->Reset();
+    //mean_syst->Reset();
 
     // Calculate the mean and standard deviation for each bin over all universes
     std::vector<double> means;
@@ -91,17 +91,20 @@ class Systematics
       double std_dev = 0;
       for(size_t ns = 0; ns < universes.size(); ns++){
         std_dev += std::pow(universes[ns]->GetBinContent(n) - mean, 2.);
+        //std_dev += std::pow(universes[ns]->GetBinContent(n) - mean_syst->GetBinContent(n), 2.);
       }
       std_dev = std::sqrt(std_dev/(universes.size()-1));
-      mean_syst->SetBinContent(n, mean);
+      //mean_syst->SetBinContent(n, mean);
       mean_syst->SetBinError(n, std_dev);
     }
 
     // Calculate the covariance and correlation over all universes
     for(size_t i = 1; i <= nbins; i++){
       double cv_i = means[i-1];
+      //double cv_i = mean_syst->GetBinContent(i);
       for(size_t j = 1; j <= nbins; j++){
         double cv_j = means[j-1];
+        //double cv_j = mean_syst->GetBinContent(j);
         double E_ij = 0;
         for(size_t ns = 0; ns < universes.size(); ns++){
           E_ij += (universes[ns]->GetBinContent(i)-cv_i)*(universes[ns]->GetBinContent(j)-cv_j);

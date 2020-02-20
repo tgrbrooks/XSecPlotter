@@ -452,7 +452,8 @@ void Variables(){
       }
       // Stat errors
       double serror = pow(hists[i]->GetBinError(j), 2.);
-      cov->SetBinContent(j, j, perror+serror);
+      //cov->SetBinContent(j, j, perror+serror);
+      cov->SetBinContent(j, j, serror);
     }
     // Genie and flux reweighting systematics
     std::vector<TH1D*> genie_v;
@@ -494,7 +495,8 @@ void Variables(){
       }
       // Stat errors
       double serror = pow(hists_2D[i]->GetBinError(j), 2.);
-      cov->SetBinContent(j, j, perror+serror);
+      //cov->SetBinContent(j, j, perror+serror);
+      cov->SetBinContent(j, j, serror);
     }
     // Genie and flux reweighting systematics
     std::vector<TH2Poly*> genie_v;
@@ -519,7 +521,7 @@ void Variables(){
     det_2D.push_back(det_v);
     covariances_2D.push_back(cov);
   }
-
+/*
   // Get the reweighting from file
   TTreeReader weight_reader("XSecTree/weight", &mc_file);
   TTreeReaderArray<double> gw(weight_reader, "genie_weights");
@@ -627,7 +629,7 @@ void Variables(){
     covariances_2D[i]->Add(det_cov);
     delete det_cov;
   }
-
+*/
   // Calculate chi2 between data and MC for each histogram
   std::vector<double> chis;
   for(size_t i = 0; i < hists.size(); i++){

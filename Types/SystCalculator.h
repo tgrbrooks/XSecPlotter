@@ -12,11 +12,11 @@ class SystCalculator
 {
   public:
 
-  Configuration *config;
-  HistManager *histman;
-  DataManager *dataman;
+  Configuration *config; // Global configuration
+  HistManager *histman; // All histograms
+  DataManager *dataman; // All raw data
 
-  size_t file_i;
+  size_t file_i; // Input file index
 
   // Constructor
   SystCalculator(Configuration *c, HistManager *h, DataManager *d, size_t f)
@@ -61,6 +61,10 @@ class SystCalculator
 
   }
 
+  // --------------------------------------------------------------------------------------------------------
+  //                                CONSTANT SYSTEMATICS CALCULATOR
+  // --------------------------------------------------------------------------------------------------------
+
   // Apply constant systematic errors to each bin
   void GetConstantSysts(){
 
@@ -92,14 +96,46 @@ class SystCalculator
     
   }
 
+  // --------------------------------------------------------------------------------------------------------
+  //                                BACKGROUND SYSTEMATICS CALCULATOR
+  // --------------------------------------------------------------------------------------------------------
+
   // Work out the error on the amount of background subtracted from a bin
   double BkgSubtractionError(double mid, double width, TH1D* bkg){
 
+    // Find background histogram bin
     int bin = bkg->GetXaxis()->FindBin(mid);
+    // Calculate scale factor
     double bin_width = bkg->GetBinWidth(bin);
     double scale = (width/bin_width) * (config->pot[file_i]*config->pot_scale_fac[file_i]/6.6e20);
+    // Get percentage error on background bin
     double percent_error = bkg->GetBinError(bin)/bkg->GetBinContent(bin);
+    // Get correct number of subtracted background events 
     double subtracted = bkg->GetBinContent(bin) * scale;
+    // Get the absolute error on the number of subtracted events
+    double subtraction_error = subtracted * percent_error;
+    if(std::isnan(subtraction_error)) subtraction_error = 0.;
+
+    return subtraction_error;
+  }
+
+  // Work out the error on the amount of background subtracted from a bin for 2D hist
+  double BkgSubtractionError(double mid_x, double width_x, double mid_y, double width_y, TH2D* bkg){
+
+    // Find background histogram bin
+    int bin_x = bkg->GetXaxis()->FindBin(mid_x);
+    int bin_y = bkg->GetYaxis()->FindBin(mid_y);
+    // Calculate scale factor
+    double bin_width_x = bkg->GetXaxis()->GetBinWidth(bin_x);
+    double bin_width_y = bkg->GetYaxis()->GetBinWidth(bin_y);
+    double width = width_x * width_y;
+    double bin_width = bin_width_x * bin_width_y;
+    double scale = (width/bin_width) * (config->pot[file_i]*config->pot_scale_fac[file_i]/6.6e20);
+    // Get percentage error on background bin
+    double percent_error = bkg->GetBinError(bin_x, bin_y)/bkg->GetBinContent(bin_x, bin_y);
+    // Get correct number of subtracted background events 
+    double subtracted = bkg->GetBinContent(bin_x, bin_y) * scale;
+    // Get the absolute error on the number of subtracted events
     double subtraction_error = subtracted * percent_error;
     if(std::isnan(subtraction_error)) subtraction_error = 0.;
 
@@ -111,7 +147,9 @@ class SystCalculator
 
     double scale = config->pot[file_i]*config->pot_scale_fac[file_i]/6.6e20;
     double total_error = 0;
+    // Gets the statistical error TODO does it?
     double total_content = bkg->IntegralAndError(0, bkg->GetNbinsX()+1, total_error);
+    // Add up the systematic error
     for(int i = 0; i <= bkg->GetNbinsX()+1; i++){
       double err = std::pow(bkg->GetBinError(i),2);
       if(std::isnan(err)) err = 0;
@@ -128,8 +166,14 @@ class SystCalculator
   // Calculate external background systematic uncertainties
   void GetBackgroundSysts(){
 
-    // Background templates should all be scales to 6.6e20
-    TFile *bkg_file = new TFile("BackgroundTemplates.root");
+    // Background templates should all be scaled to 6.6e20
+    TFile *bkg_file = new TFile("Backgrounds/BackgroundTemplates.root", "READ");
+
+    // Check if file exists
+    bool has_file = false;
+    if(bkg_file->IsOpen()) has_file = true;
+    if(!has_file) std::cout<<"No external background template file!\nUsing flat 1% systematic error\n";
+
     TH1D* hMomCos = (TH1D*)bkg_file->Get("hMomCosErr");
     TH1D* hCosThetaCos = (TH1D*)bkg_file->Get("hCosThetaCosErr");
     TH2D* hMomCosThetaCos = (TH2D*)bkg_file->Get("hMomCosThetaCosErr");
@@ -138,10 +182,14 @@ class SystCalculator
     TH2D* hMomCosThetaDirt = (TH2D*)bkg_file->Get("hMomCosThetaDirtErr");
 
     // Total systematics
-    double tot_dirt_esq = std::pow(TotalBkgError(hMomDirt), 2);
-    double tot_cos_esq = std::pow(TotalBkgError(hMomCos), 2);
-    double total_err = std::sqrt(tot_dirt_esq + tot_cos_esq);
     for(int n = 1; n <= histman->total->total_hist->GetNbinsX(); n++){
+      double tot_cos_err = std::pow(0.01*histman->total->total_hist->GetBinContent(n), 2);
+      double tot_dirt_err = 0;
+      if(has_file){
+        tot_cos_err = std::pow(TotalBkgError(hMomCos), 2);
+        tot_dirt_err = std::pow(TotalBkgError(hMomDirt), 2);
+      }
+      double tot_err = std::sqrt(std::pow(tot_cos_err, 2.)+std::pow(tot_dirt_err, 2.));
       histman->total->systematics->background->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
       histman->total->systematics->background->mean_syst->SetBinError(n, total_err);
     }
@@ -151,34 +199,55 @@ class SystCalculator
       for(int n = 1; n <= kv1D.second->total_hist->GetNbinsX(); n++){
         double mid = kv1D.second->total_hist->GetBinCenter(n);
         double width = kv1D.second->total_hist->GetBinWidth(n);
+        // Default 1% error
+        double cos_sub_err = 0.01*kv1D.second->total_hist->GetBinContent(n);
+        double dirt_dub_err = 0;
         // Determine the plotting variable
-        if(kv1D.first=="lep_mom"){
+        if(kv1D.first=="lep_mom" && has_file){
           // Determine the bin of the background template
-          double cos_sub_err = BkgSubtractionError(mid, width, hMomCos);
-          double dirt_sub_err = BkgSubtractionError(mid, width, hMomDirt);
-          double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
-          kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
-          kv1D.second->systematics->background->mean_syst->SetBinError(n, tot_err);
+          cos_sub_err = BkgSubtractionError(mid, width, hMomCos);
+          dirt_sub_err = BkgSubtractionError(mid, width, hMomDirt);
         }
-        else if(kv1D.first=="cos_lep_theta"){
-          double cos_sub_err = BkgSubtractionError(mid, width, hCosThetaCos);
-          double dirt_sub_err = BkgSubtractionError(mid, width, hCosThetaDirt);
-          double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
-          kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
-          kv1D.second->systematics->background->mean_syst->SetBinError(n, tot_err);
+        else if(kv1D.first=="cos_lep_theta" && has_file){
+          cos_sub_err = BkgSubtractionError(mid, width, hCosThetaCos);
+          dirt_sub_err = BkgSubtractionError(mid, width, hCosThetaDirt);
         }
-        else{
-          kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
-          kv1D.second->systematics->background->mean_syst->SetBinError(n, 0.01*kv1D.second->total_hist->GetBinContent(n));
-        }
+        double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
+        kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
+        kv1D.second->systematics->background->mean_syst->SetBinError(n, tot_err);
       }
     }
 
-    // 2D systematics TODO Add 2D systematics properly
+    // 2D systematics
     for(auto& kv2D : histman->histos_2D){
       for(int i = 1; i <= kv2D.second->total_hist->GetNumberOfBins(); i++){
+        // Default 1% error
+        double cos_sub_err = 0.01*kv2D.second->total_hist->GetBinContent(i);
+        double dirt_sub_err = 0;
+        // Find bin center and width in X and Y
+        double width_x = -1;
+        double width_y = -1;
+        double mid_y = -1;
+        double mid_x = -1;
+        for(auto const& obj : *kv2D.second->total_hist->GetBins()){
+          TH2PolyBin *bin = (TH2PolyBin*)obj;
+          if(bin->GetBinNumber() != i) continue;
+          width_x = bin->GetXMax() - bin->GetXMin();
+          width_y = bin->GetYMax() - bin->GetYMin();
+          mid_x = (bin->GetXMax() + bin->GetXMax())/2.;
+          mid_y = (bin->GetYMax() + bin->GetYMax())/2.;
+        }
+        if(kv2D.first == {"lep_mom", "cos_lep_theta"} && has_file && width_x != -1){
+          cos_sub_err = BkgSubtractionError(mid_x, width_x, mid_y, width_y, hMomCosThetaCos);
+          dirt_sub_err = BkgSubtractionError(mid_x, width_x, mid_y, width_y, hMomCosThetaDirt);
+        }
+        else if(kv2D.first == {"cos_lep_theta", "lep_mom"} && has_file && width_x != -1){
+          cos_sub_err = BkgSubtractionError(mid_y, width_y, mid_x, width_x, hMomCosThetaCos);
+          dirt_sub_err = BkgSubtractionError(mid_y, width_y, mid_x, width_x, hMomCosThetaDirt);
+        }
+        double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
         kv2D.second->systematics->background->mean_syst->SetBinContent(i, kv2D.second->total_hist->GetBinContent(i));
-        kv2D.second->systematics->background->std_syst->SetBinContent(i, 0.01*kv2D.second->total_hist->GetBinContent(i));
+        kv2D.second->systematics->background->std_syst->SetBinContent(i, tot_err);
       }
     }
 
@@ -186,11 +255,15 @@ class SystCalculator
 
   }
 
+  // --------------------------------------------------------------------------------------------------------
+  //                                DETECTOR SYSTEMATICS CALCULATOR
+  // --------------------------------------------------------------------------------------------------------
+  
   // Calculate the detector systematic uncertainties
   void GetDetectorSysts(){
 
     // Number of universes
-    int nsims = 50;
+    int nsims = config->detector_nuni;
 
     // Create empty histograms for universes
     histman->CreateUniverses("detector", nsims);
@@ -198,7 +271,7 @@ class SystCalculator
     Selection sel(config);
 
     // Read in variation data from file
-    TFile data_file(config->input_file[file_i]);
+    TFile data_file(config->input_file[file_i], "READ");
 
     TTreeReader tree_reader("XSecTree/detsyst", &data_file);
     TTreeReaderValue<double> vtx_x(tree_reader, "ds_vtx_x");
@@ -208,6 +281,7 @@ class SystCalculator
     TTreeReaderArray<bool> lep_contained(tree_reader, "ds_lep_contained");
     TTreeReaderArray<int> cc(tree_reader, "ds_cc");
     TTreeReaderArray<int> nu_pdg(tree_reader, "ds_nu_pdg");
+    // TODO add support for other variables
     TTreeReaderArray<double> lep_mom(tree_reader, "ds_lep_mom");
     TTreeReaderArray<double> lep_theta(tree_reader, "ds_lep_theta");
 
@@ -255,16 +329,20 @@ class SystCalculator
 
   }
 
+  // --------------------------------------------------------------------------------------------------------
+  //                            REWEIGHTING (GENIE+FLUX) SYSTEMATICS CALCULATOR
+  // --------------------------------------------------------------------------------------------------------
+  
   // Calculate reweighting systematics (genie and flux)
   void GetReweightSysts(bool calc_genie, bool calc_flux){
-    int nsims = 100;
+    int nsims = config->reweight_nuni;
 
     // Create empty histograms for universes
     histman->CreateUniverses("genie", nsims);
     histman->CreateUniverses("flux", nsims);
 
     // Read in data from file
-    TFile data_file(config->input_file[file_i]);
+    TFile data_file(config->input_file[file_i], "READ");
 
     //Read in TTree
     TTreeReader tree_reader("XSecTree/weight", &data_file);

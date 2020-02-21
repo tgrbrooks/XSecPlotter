@@ -37,6 +37,7 @@
 #include "Types/Titles.h"
 #include "Types/BinManager.h"
 #include "Types/Plotter.h"
+#include "Types/FluxManager.h"
 #include "Types/HistManager.h"
 #include "Types/DataManager.h"
 #include "Types/SystCalculator.h"
@@ -61,6 +62,7 @@ void XSecPlotter(){
   std::string input_file = "config.txt";
   Configuration *config = new Configuration(input_file);
   config->GetMetaData();
+  FluxManager *fluxman = new FluxManager(config);
   std::cout<<"...Finished.\n";
 
   // Get from configuration

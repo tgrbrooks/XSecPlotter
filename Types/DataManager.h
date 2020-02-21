@@ -129,7 +129,7 @@ class DataManager
       bool selected = sel.IsSelected(*nu_pdg, *cc, *lep_contained, *particles_contained, 
                                  *n_pr, *n_pipm, *n_pi0, *int_type);
       bool true_selected = sel.IsSelected(*true_nu_pdg, *true_cc, *true_lep_contained, 
-                                      *true_particles_contained, *true_n_pr, *true_n_pipm, *true_n_pi0, *true_int_type);
+                                      *true_particles_contained, *true_n_pr, *true_n_pipm, *true_n_pi0, *true_int_type, true);
 
       // Check true vertex inside fiducial volume
       if(!sel.InFiducial(*vtx_x, *vtx_y, *vtx_z)){
@@ -230,8 +230,8 @@ class DataManager
         }
 
         if(apply_cos){ 
-          variables[index] = cos(variables[index]);
-          true_variables[index] = cos(true_variables[index]);
+          if(variables[index] != -99999) variables[index] = cos(variables[index]);
+          if(true_variables[index] != -99999) true_variables[index] = cos(true_variables[index]);
         }
         index++;
       }

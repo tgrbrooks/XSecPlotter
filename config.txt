@@ -137,13 +137,13 @@ PlotFilled: false
 ShowInfo: false
 
 // Show error band at bottom of plot (true)
-ShowErrorBand: true
+ShowErrorBand: false
 
 // Show percentage statistical error (true)
-ShowStatError: true
+ShowStatError: false
 
 // Show systematic error (true)
-ShowSystError: true
+ShowSystError: false
 
 // List of systematics to include (genie, flux, detector, background, constant)
 Systematics: flux
@@ -152,16 +152,16 @@ Systematics: flux
 ConstantSyst: 0.027
 
 // Show error bars on histograms (true)
-ShowErrorBars: true
+ShowErrorBars: false
 
 // Produce covariance and correlation matrices for systematic errors (true)
-PlotCorrelation: true
+PlotCorrelation: false
 
 // Plot all of the different universes for systematic uncertainties
-PlotUniverses: true
+PlotUniverses: false
 
 // Produce efficiency and purity plots (true)
 PlotEffPur: false
 
 // Produce response matrix (true)
-PlotResponse: false
+PlotResponse: true

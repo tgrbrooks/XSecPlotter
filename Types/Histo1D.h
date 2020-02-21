@@ -10,6 +10,7 @@ class Histo1D
 
   TString name;
   TH1D* total_hist;
+  TH1D* bkg_hist;
   TH1D* empty;
   TH1D* error_band;
   double scale;
@@ -27,6 +28,7 @@ class Histo1D
     empty = (TH1D*) total_hist->Clone();
     empty->Reset();
     name = TString(total_hist->GetName());
+    bkg_hist = (TH1D*) empty->Clone(name+"_bkg");
     GetErrorBand();
 
     // Initialise efficiency, purity and systematics
@@ -49,6 +51,7 @@ class Histo1D
     empty = (TH1D*) total_hist->Clone();
     empty->Reset();
     name = TString(total_hist->GetName());
+    bkg_hist = (TH1D*) empty->Clone(name+"_bkg");
     stacked_hist = stack1D.first;
     legend = stack1D.second;
 
@@ -71,9 +74,10 @@ class Histo1D
   }
 
   // Constructor (used for 1D slices of 2D histograms)
-  Histo1D(TH1D* hist, std::pair<THStack*, TLegend*> stack1D, std::pair<TH1D*, TH1D*> eff, std::pair<TH1D*, TH1D*> pur, SystSummary *syst)
+  Histo1D(TH1D* hist, TH1D* bkg, std::pair<THStack*, TLegend*> stack1D, std::pair<TH1D*, TH1D*> eff, std::pair<TH1D*, TH1D*> pur, SystSummary *syst)
   {
     total_hist = hist;
+    bkg_hist = bkg;
     name = TString(total_hist->GetName());
     stacked_hist = stack1D.first;
     legend = stack1D.second;

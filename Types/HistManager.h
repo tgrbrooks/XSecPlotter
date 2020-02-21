@@ -35,6 +35,10 @@ class HistManager
     // Total event rate
     TH1D* hist0D = GetTotal();
     total = new Histo1D(hist0D);
+    if(config->plot_xsec){
+      SetBackground();
+      SetEfficiency();
+    }
     // 1D histograms
     for(size_t i = 0; i < config->plot_variables.size(); i++){
       TString key1D = config->plot_variables[i];
@@ -48,8 +52,9 @@ class HistManager
       histos_1D[key1D] = histo1D;
 
       // Calculate efficiency and purity if plotting
-      if(config->plot_eff_pur) SetEfficiency(i);
-      if(config->plot_response) SetResponse(i);
+      if(config->plot_xsec) SetBackground(i);
+      if(config->plot_eff_pur || config->plot_xsec) SetEfficiency(i);
+      if(config->plot_response || config->plot_xsec) SetResponse(i);
       // 2D histograms
       for(size_t j = 0; j < config->plot_variables.size(); j++){
         if(i==j) continue;
@@ -68,8 +73,9 @@ class HistManager
         histos_2D[key2D] = histo2D;
 
         // Calculate efficiency and response if plotting
-        if(config->plot_eff_pur) SetEfficiency(i, j);
-        if(config->plot_response) SetResponse(i, j, hist2D);
+        if(config->plot_xsec) SetBackground(i, j);
+        if(config->plot_eff_pur || config->plot_xsec) SetEfficiency(i, j);
+        if(config->plot_response || config->plot_xsec) SetResponse(i, j, hist2D);
       }
     }
     
@@ -125,6 +131,10 @@ class HistManager
     return n_1D + n_2D + n_1D_slice;
   }
 
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                        HANDLING SYSTEMATIC UNIVERSES
+  // ------------------------------------------------------------------------------------------------------------------
+
   // Create empty histograms for systematic variations
   void CreateUniverses(TString syst, int n){
     total->systematics->GetSyst(syst)->CreateUniverses(n);
@@ -157,6 +167,76 @@ class HistManager
     for(auto& kv : histos_2D){
       kv.second->systematics->GetSyst(syst)->Calculate();
     }
+  }
+
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                        BACKGROUND HISTOGRAM CREATION
+  // ------------------------------------------------------------------------------------------------------------------
+
+  // Calculate the background for 1D histograms
+  void SetBackground(){
+
+    for (auto const& in : dataman->interactions){
+      // Denominator of efficiency plot is all interactions that are selected in truth
+      if(in.selected && !in.true_selected){ 
+        total->bkg_hist->Fill(1);
+      }
+    }
+
+  }
+  
+
+  // Calculate the background for 1D histograms
+  void SetBackground(size_t var_i){
+
+    TString plot_var = config->plot_variables[var_i];
+
+    for (auto const& in : dataman->interactions){
+      // Denominator of efficiency plot is all interactions that are selected in truth
+      if(in.selected && !in.true_selected){ 
+        histos_1D[plot_var]->bkg_hist->Fill(in.true_variables[var_i]);
+      }
+    }
+
+  }
+
+  // Calculate the background for 2D histograms
+  void SetBackground(size_t var_i, size_t var_j){
+
+    std::pair<TString, TString> key = std::make_pair(config->plot_variables[var_i], config->plot_variables[var_j]);
+
+    for (auto const& in : dataman->interactions){
+      // Denominator of efficiency plot is all interactions that are selected in truth
+      if(in.selected && !in.true_selected){ 
+        histos_2D[key]->bkg_hist->Fill(in.true_variables[var_i], in.true_variables[var_j]);
+      }
+    }
+
+  }
+
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                      EFFICIENCY AND PURITY CALCULATION
+  // ------------------------------------------------------------------------------------------------------------------
+
+  // Calculate the efficiency and purity for 1D histograms
+  void SetEfficiency(){
+
+    for (auto const& in : dataman->interactions){
+      // Denominator of efficiency plot is all interactions that are selected in truth
+      if(in.true_selected){ 
+         total->efficiency.second->Fill(1);
+      }
+      // Denominator of purity plot is all interaction that are selected after reconstruction
+      if(in.selected){ 
+        total->purity.second->Fill(1);
+      }
+      // Numerator of efficiency and purity plots is all interactions that are selected in both truth and reco
+      if(in.selected && in.true_selected){ 
+        total->efficiency.first->Fill(1);
+        total->purity.first->Fill(1);
+      }
+    }
+
   }
 
   // Calculate the efficiency and purity for 1D histograms
@@ -205,7 +285,11 @@ class HistManager
 
   }
 
-  // Calculate the efficiency and purity for 1D histograms
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                        RESPONSE MATRIX CREATION
+  // ------------------------------------------------------------------------------------------------------------------
+
+  // Calculate the response matrix for 1D histograms
   void SetResponse(size_t var_i){
 
     TString key = config->plot_variables[var_i];
@@ -217,9 +301,9 @@ class HistManager
     TH2D *temp_response = new TH2D("temp_response", "", bin_edges.size()-1, edges_array, bin_edges.size()-1, edges_array);
     int index = 0;
     for(auto const& in : dataman->interactions){
-      // When an event is not reconstructed the reco entry is -99999
-      // This puts it in the underflow bin for reconstruction
-      if(in.selected && in.true_selected){
+      // Response matrix for all reconstructed events that are selected in truth
+      // TODO check this
+      if(in.true_selected && in.variables[var_i] != -99999){
         temp_response->Fill(in.true_variables[var_i], in.variables[var_i]);
       }
     }
@@ -245,7 +329,7 @@ class HistManager
 
   }
 
-  // Calculate the efficiency and purity for 1D histograms
+  // Calculate the response matrix for 2D histograms
   void SetResponse(size_t var_i, size_t var_j, TH2Poly* hist){
 
     std::pair<TString, TString> key = std::make_pair(config->plot_variables[var_i], config->plot_variables[var_j]);
@@ -253,11 +337,10 @@ class HistManager
 
     TH2D *response = new TH2D("response", "", nbins, 1, nbins+1, nbins, 1, nbins+1);
     for(auto const& in : dataman->interactions){
-      // When an event is not reconstructed the reco entry is -99999
-      // This puts it in the underflow bin for reconstruction
+      // Response matrix defined for all reconstructed events match to true event in FV
       int true_bin = hist->FindBin(in.true_variables[var_i], in.true_variables[var_j]);
       int reco_bin = hist->FindBin(in.variables[var_i], in.variables[var_j]);
-      if(in.selected && in.true_selected){
+      if(in.true_selected && in.variables[var_i] != -99999 && in.variables[var_j] != -99999){
         response->Fill(true_bin-0.5, reco_bin-0.5);
       }
     }
@@ -284,7 +367,38 @@ class HistManager
 
   }
 
+  
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                        TOTAL RATE HISTOGRAM CREATION
+  // ------------------------------------------------------------------------------------------------------------------
+  
+  // Get the total (unstacked) histogram
+  TH1D* GetTotal(){
 
+    TString tune = "";
+    if(config->tune_name.size() > 1) tune = config->tune_name[file_i];
+    double total;
+    TH1D *total_hist = new TH1D(tune+"total", "", 1, 0, 2);
+
+    for (size_t n = 0; n < dataman->total_data.size(); n++){
+      total_hist->Fill(1);
+      total++;
+    }
+    total_hist->SetBinContent(1, total_hist->GetBinContent(1)*config->pot_scale_fac[file_i]);
+    // If plotting cross section convert from rate
+    /*if(config->plot_xsec){
+      double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
+      total_hist->Scale(xsec_scale);
+    }*/
+    return total_hist;
+    
+  }
+
+
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                        1D RATE HISTOGRAM CREATION
+  // ------------------------------------------------------------------------------------------------------------------
+  
   // Create stacked histogram and legend from data
   std::pair<THStack*, TLegend*> StackHist1D(size_t var_i){
 
@@ -304,14 +418,15 @@ class HistManager
       }
       hist->Scale(config->pot_scale_fac[file_i]);
       // If plotting cross section convert from rate
-      if(config->plot_xsec){
+      hist->Scale(1, "width");
+      /*if(config->plot_xsec){
         double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
         hist->Scale(xsec_scale, "width");
       }
       // Else if max error used divide each bin by width
       else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
         hist->Scale(1, "width");
-      }
+      }*/
       hist->SetFillColor(config->cols[index+2*file_i]);
       hist->SetLineColor(config->cols[index+2*file_i]);
       if(!config->plot_filled){
@@ -324,28 +439,6 @@ class HistManager
     }
 
     return std::make_pair(hstack, legend);
-  }
-
-  // Get the total (unstacked) histogram
-  TH1D* GetTotal(){
-
-    TString tune = "";
-    if(config->tune_name.size() > 1) tune = config->tune_name[file_i];
-    double total;
-    TH1D *total_hist = new TH1D(tune+"total", "", 1, 0, 2);
-
-    for (size_t n = 0; n < dataman->total_data.size(); n++){
-      total_hist->Fill(1);
-      total++;
-    }
-    total_hist->SetBinContent(1, total_hist->GetBinContent(1)*config->pot_scale_fac[file_i]);
-    // If plotting cross section convert from rate
-    if(config->plot_xsec){
-      double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
-      total_hist->Scale(xsec_scale);
-    }
-    return total_hist;
-    
   }
 
   // Get the total (unstacked) histogram
@@ -366,17 +459,23 @@ class HistManager
       total_hist->SetBinContent(n, total_hist->GetBinContent(n)*config->pot_scale_fac[file_i]);
     }
     // If plotting cross section convert from rate
-    if(config->plot_xsec){
+    total_hist->Scale(1, "width");
+    /*if(config->plot_xsec){
       double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
       total_hist->Scale(xsec_scale, "width");
     }
     // Else if max error used divide each bin by width FIXME is this ok for stat errors?
     else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
       total_hist->Scale(1, "width");
-    }
+    }*/
     total_hist->SetLineColor(config->cols[0+2*file_i]);
     return total_hist;
   }
+
+
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                        2D RATE HISTOGRAM CREATION
+  // ------------------------------------------------------------------------------------------------------------------
 
   // Create stacked histogram and legend from data
   std::pair<std::vector<THStack*>, TLegend*> StackHist2D(size_t var_i, size_t var_j){
@@ -416,7 +515,9 @@ class HistManager
         }
         hist->Scale(config->pot_scale_fac[file_i]);
         // If plotting cross section convert from rate
-        if(config->plot_xsec){
+        double width = (ybin_edges[bin_j+1] - ybin_edges[bin_j]);
+        hist->Scale(1/width, "width");
+        /*if(config->plot_xsec){
           double width = (ybin_edges[bin_j+1] - ybin_edges[bin_j]);
           double xsec_scale = 1e38/(width * config->flux[file_i] * config->targets);
           hist->Scale(xsec_scale, "width");
@@ -425,7 +526,7 @@ class HistManager
         else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
           double width = (ybin_edges[bin_j+1] - ybin_edges[bin_j]);
           hist->Scale(1/width, "width");
-        }
+        }*/
         hist->SetFillColor(config->cols[index]+file_i);
         hist->SetLineColor(config->cols[index]+file_i);
         if(file_i != 0){
@@ -478,14 +579,15 @@ class HistManager
       total_hist->SetBinContent(i, total_hist->GetBinContent(i)*config->pot_scale_fac[file_i]);
     }
     // If plotting cross section convert from rate
-    if(config->plot_xsec){
+    total_hist->Scale(1, "width");
+    /*if(config->plot_xsec){
       double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
       total_hist->Scale(xsec_scale, "width");
     }
     // Else if max error used divide each bin by width
     else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
       total_hist->Scale(1, "width");
-    }
+    }*/
     total_hist->SetLineColor(config->cols[0]+file_i);
     return total_hist;
   }

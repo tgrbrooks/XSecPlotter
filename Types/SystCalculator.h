@@ -191,7 +191,7 @@ class SystCalculator
       }
       double tot_err = std::sqrt(std::pow(tot_cos_err, 2.)+std::pow(tot_dirt_err, 2.));
       histman->total->systematics->background->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
-      histman->total->systematics->background->mean_syst->SetBinError(n, total_err);
+      histman->total->systematics->background->mean_syst->SetBinError(n, tot_err);
     }
 
     // 1D systematics
@@ -201,7 +201,7 @@ class SystCalculator
         double width = kv1D.second->total_hist->GetBinWidth(n);
         // Default 1% error
         double cos_sub_err = 0.01*kv1D.second->total_hist->GetBinContent(n);
-        double dirt_dub_err = 0;
+        double dirt_sub_err = 0;
         // Determine the plotting variable
         if(kv1D.first=="lep_mom" && has_file){
           // Determine the bin of the background template
@@ -237,11 +237,11 @@ class SystCalculator
           mid_x = (bin->GetXMax() + bin->GetXMax())/2.;
           mid_y = (bin->GetYMax() + bin->GetYMax())/2.;
         }
-        if(kv2D.first == {"lep_mom", "cos_lep_theta"} && has_file && width_x != -1){
+        if(kv2D.first.first == "lep_mom" && kv2D.first.second == "cos_lep_theta" && has_file && width_x != -1){
           cos_sub_err = BkgSubtractionError(mid_x, width_x, mid_y, width_y, hMomCosThetaCos);
           dirt_sub_err = BkgSubtractionError(mid_x, width_x, mid_y, width_y, hMomCosThetaDirt);
         }
-        else if(kv2D.first == {"cos_lep_theta", "lep_mom"} && has_file && width_x != -1){
+        else if(kv2D.first.first == "cos_lep_theta" && kv2D.first.second == "lep_mom" && has_file && width_x != -1){
           cos_sub_err = BkgSubtractionError(mid_y, width_y, mid_x, width_x, hMomCosThetaCos);
           dirt_sub_err = BkgSubtractionError(mid_y, width_y, mid_x, width_x, hMomCosThetaDirt);
         }

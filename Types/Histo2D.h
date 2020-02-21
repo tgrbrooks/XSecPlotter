@@ -12,6 +12,7 @@ class Histo2D
 
   TString name;
   TH2Poly* total_hist;
+  TH2Poly* bkg_hist;
   TH2Poly* empty;
   std::vector<THStack*> stacked_hist;
   std::vector<double> ybins;
@@ -31,6 +32,8 @@ class Histo2D
     name = TString(total_hist->GetName());
     empty = (TH2Poly*)total_hist->Clone();
     empty->ClearBinContents();
+
+    bkg_hist = (TH2Poly*) empty->Clone(name+"_bkg");
 
     stacked_hist = stack2D.first;
     ybins = yb;
@@ -57,13 +60,14 @@ class Histo2D
     int bin = i;
     TString slice_name = name + Form("_%.1f_%.1f", ybins[i], ybins[i+1]);
     TH1D* total = SlicePoly(total_hist, i, slice_name, ybins, xbins);
+    TH1D* bkg = SlicePoly(bkg_hist, i, slice_name+"_bkg", ybins, xbins);
     THStack* stack = stacked_hist[i];
     std::pair<TH1D*, TH1D*> eff = std::make_pair(SlicePoly(efficiency.first, i, slice_name+"_en", ybins, xbins)
                                                , SlicePoly(efficiency.second, i, slice_name+"_ed", ybins, xbins));
     std::pair<TH1D*, TH1D*> pur = std::make_pair(SlicePoly(purity.first, i, slice_name+"_pn", ybins, xbins)
                                                , SlicePoly(purity.second, i, slice_name+"_pd", ybins, xbins));
     SystSummary* syst1D = systematics->Slice(i);
-    Histo1D* sliced_histo = new Histo1D(total, std::make_pair(stack, legend), eff, pur, syst1D);
+    Histo1D* sliced_histo = new Histo1D(total, bkg, std::make_pair(stack, legend), eff, pur, syst1D);
     return sliced_histo;
   }
 

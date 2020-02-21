@@ -8,6 +8,7 @@
 #include "Histo1D.h"
 #include "Histo2D.h"
 #include "HistManager.h"
+#include "XSecCalculator.h"
 
 // Class for handling all plotting
 class Plotter
@@ -116,7 +117,6 @@ class Plotter
       error_hists.push_back(error_hist);
       if(first){
         histos[file_i]->stacked_hist->Draw("HIST");
-        first = false;
       } else histos[file_i]->stacked_hist->Draw("HIST SAME");
       if(config->show_error_bars){
         for(int n = 0; n <= error_hist->GetNbinsX(); n++){
@@ -160,11 +160,8 @@ class Plotter
     if(config->plot_xsec){
       histos[0]->stacked_hist->GetYaxis()->SetTitle(titles->GetXSecTitle(var_i));
     }
-    else if(config->max_error > 0){
-      histos[0]->stacked_hist->GetYaxis()->SetTitle("Events (/bin width)");
-    }
     else{
-      histos[0]->stacked_hist->GetYaxis()->SetTitle("Events");
+      histos[0]->stacked_hist->GetYaxis()->SetTitle("Events (/bin width)");
     }
     // X axis config
     histos[0]->stacked_hist->GetXaxis()->SetLabelOffset(0.1);
@@ -269,8 +266,8 @@ class Plotter
       error_hists.push_back(error_hist);
       if(first){
         histos[file_i]->stacked_hist->Draw("HIST");
-        first = false;
       } else histos[file_i]->stacked_hist->Draw("HIST SAME");
+
       if(config->show_error_bars){
         for(int n = 0; n <= error_hist->GetNbinsX(); n++){
           double stat_error = 0;
@@ -319,11 +316,8 @@ class Plotter
     if(config->plot_xsec){
       histos[0]->stacked_hist->GetYaxis()->SetTitle(titles->GetXSecTitle(var_i));
     }
-    else if(config->max_error > 0){
-      histos[0]->stacked_hist->GetYaxis()->SetTitle("Events (/Bin width)");
-    }
     else{
-      histos[0]->stacked_hist->GetYaxis()->SetTitle("Events");
+      histos[0]->stacked_hist->GetYaxis()->SetTitle("Events (/Bin width)");
     }
     histos[0]->stacked_hist->GetXaxis()->SetTitle(titles->names[var_i]+" ["+titles->units[var_i]+"]");
     if(titles->units[var_i]=="") histos[0]->stacked_hist->GetXaxis()->SetTitle(titles->names[var_i]);
@@ -344,7 +338,7 @@ class Plotter
       histos[0]->stacked_hist->GetYaxis()->SetTitleOffset(1.1);
     }
       
-    if(systname=="total")histos[0]->stacked_hist->GetYaxis()->SetTitleSize(title_size);
+    if(systname=="total") histos[0]->stacked_hist->GetYaxis()->SetTitleSize(title_size);
     histos[0]->stacked_hist->GetYaxis()->SetNdivisions(110);
     double ymax = 0;
     for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){

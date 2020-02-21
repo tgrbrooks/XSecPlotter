@@ -17,7 +17,7 @@ class Selection
   }
 
   // Check if an interaction matches the selection criteria
-  bool IsSelected(int nu_pdg, bool cc, bool lep_contained, bool particles_contained, int n_pr, int n_pipm, int n_pi0, int int_type){
+  bool IsSelected(int nu_pdg, bool cc, bool lep_contained, bool particles_contained, int n_pr, int n_pipm, int n_pi0, int int_type, bool truth=false){
     bool selected = true;
 
     // Neutrino PDG code
@@ -26,11 +26,11 @@ class Selection
     // Charged current or neutral current
     if (std::find(config->is_cc.begin(), config->is_cc.end(), cc) == config->is_cc.end())
       selected = false;
-    // Lepton contained or exiting
-    if (std::find(config->contained_lepton.begin(), config->contained_lepton.end(), lep_contained) == config->contained_lepton.end())
+    // Lepton contained or exiting, lepton containment shouldn't contribute to truth selection
+    if (std::find(config->contained_lepton.begin(), config->contained_lepton.end(), lep_contained) == config->contained_lepton.end() && !truth)
       selected = false;
-    // Other particles contained or exiting
-    if (std::find(config->contained_particles.begin(), config->contained_particles.end(), particles_contained) == config->contained_particles.end())
+    // Other particles contained or exiting, particle containment shouldn't contribute to truth selection
+    if (std::find(config->contained_particles.begin(), config->contained_particles.end(), particles_contained) == config->contained_particles.end() && !truth)
       selected = false;
     // If selecting by final state interaction products
     if (config->plot_by_fsi){

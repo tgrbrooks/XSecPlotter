@@ -9,16 +9,15 @@ class BinManager
 {
   public:
 
-  Configuration *config;
-  DataManager *dataman;
+  // --- Service pointers ---
+  Configuration *config; // Global configuration
+  DataManager *dataman; // Stored data
 
   // Multiple files possible but binning must be same, use first
   // 1D binning - X bins
   std::map<TString, std::vector<double>> bin_edges_1D;
   // 2D binning - X and Y bins
   std::map<std::pair<TString, TString>, std::vector<std::vector<double>>> bin_edges_2D;
-
-  //BinManager(){}
 
   // Constructor
   BinManager(Configuration *c, DataManager *d)
@@ -27,9 +26,13 @@ class BinManager
     dataman = d;
 
     // Get the 1D binning for all plotting variables
+    // Use a smaller error when getting the 1D binning on 2D slices
     if(config->plot_variables.size() == 2 && config->max_error > 0) config->max_error = config->max_error/3.;
     std::vector<std::vector<double>> bin_edges = GetBinning(dataman->total_data);
+    // Switch the error back
     if(config->plot_variables.size() == 2 && config->max_error > 0) config->max_error = config->max_error*3.;
+
+    // Get the 2D binning for all plotting variables
     for(size_t i = 0; i < config->plot_variables.size(); i++){
       bin_edges_1D[config->plot_variables[i]] = bin_edges[i];
       for(size_t j = 0; j < config->plot_variables.size(); j++){
@@ -40,6 +43,10 @@ class BinManager
     }
 
   }
+
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                                  ACCESSORS
+  // ------------------------------------------------------------------------------------------------------------------
 
   // Accessor to 1D binning information
   std::vector<double> Get1DBinning(TString plot_var){
@@ -62,11 +69,16 @@ class BinManager
     return bin_edges_2D[key];
   }
 
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                          DEFAULT BINNING SETTINGS
+  // ------------------------------------------------------------------------------------------------------------------
+  
   // Set the minimum bin value
   double GetMinBin(const std::vector<double>& data, int i){
     
     double min_bins = data[0];
 
+    // Some variables have special values
     if(config->plot_variables[i]=="particles_contained"||
        config->plot_variables[i]=="lep_contained"||
        config->plot_variables[i]=="cc"){
@@ -87,6 +99,7 @@ class BinManager
     
     double max_bins = data[data.size()-1];
 
+    // Some variables have special values
     if(config->plot_variables[i]=="particles_contained"||
        config->plot_variables[i]=="lep_contained"||
        config->plot_variables[i]=="cc"){
@@ -107,6 +120,7 @@ class BinManager
     
     int dflt_bins = (int)pow(2*pow(data_size,.33), 1./dims);
 
+    // Some variables have special values
     if(config->plot_variables[i]=="particles_contained"||
        config->plot_variables[i]=="lep_contained"||
        config->plot_variables[i]=="cc"){
@@ -122,18 +136,27 @@ class BinManager
    
   }
 
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                          REBINNING FUNCTIONS
+  // ------------------------------------------------------------------------------------------------------------------
+
   // Recursive function to merge bins to get up to required statistical error
   std::vector<double> ChangeBinning(TH1D* hist, double max){
 
+    // Get the edges of the histogram
     std::vector<double> bin_edges;
     for(int i = 0; i < hist->GetNbinsX(); i++){
       bin_edges.push_back(hist->GetBinLowEdge(i+1));
     }
     bin_edges.push_back(max);
 
+    // Loop over the bins
     for(int i = 0; i < hist->GetNbinsX(); i++){
+
+      // If bin error is greater than max value
       if(hist->GetBinError(i+1)/hist->GetBinContent(i+1) > config->max_error || hist->GetBinContent(i+1) == 0){
 
+        // If we're not in the last bin erase the next bin edges
         if(i != hist->GetNbinsX()-1){
           bin_edges.erase(bin_edges.begin()+i+1);
           double edges_array[bin_edges.size()];
@@ -142,6 +165,7 @@ class BinManager
           return ChangeBinning(new_hist, max);
         }
 
+        // Otherwise erase the bin edge before
         else{
           bin_edges.erase(bin_edges.begin()+(bin_edges.size()-2));
           return bin_edges;
@@ -155,25 +179,33 @@ class BinManager
   // Function to get or calculate the number of bins, and min and max bins
   std::vector<std::vector<double>> GetBinning(const std::vector<std::vector<double>> &data_v){
 
+    // Sort the data into separate vectors
     std::map<int, std::vector<double>> data_map;
     for(auto const& data : data_v){
       for(size_t i = 0; i < data.size(); i++){
         data_map[i].push_back(data[i]);
       }
     }
+    // Sort by size
     for(size_t i = 0; i < data_map.size(); i++){
       std::sort(data_map[i].begin(), data_map[i].end());
     }
+
+    // Get default values from configuration
     std::vector<double> hist_min = config->min_value;
     std::vector<double> hist_max = config->max_value;
     std::vector<int> hist_bins = config->num_bins;
+
+    // Loop over the plotting variables
     for(size_t i = 0; i < config->plot_variables.size(); i++){
+      // Set minimum and maximum values if not specified
       if(config->min_value[i] < 0){
         hist_min[i] = GetMinBin(data_map[i], i);
       }
       if(config->max_value[i] <= 0){
         hist_max[i] = GetMaxBin(data_map[i], i);
       }
+      // Set the default number of bins if not specified
       if(config->num_bins[i] <= 0){
         int data_size = 0;
         for(auto const& data : data_v){
@@ -183,12 +215,14 @@ class BinManager
       }
     }
     
+    // Store the bin edges
     std::vector<std::vector<double>> all_bin_edges;
     for(size_t i = 0; i < config->plot_variables.size(); i++){
       // If bin edges are set by the user
       if(config->bin_edges[i].size() > 1){
         all_bin_edges.push_back(config->bin_edges[i]);
       }
+      // Otherwise use the calculated binning
       else{
         TH1D *temp_hist = new TH1D("temp_hist", "", hist_bins[i], hist_min[i], hist_max[i]);
         std::vector<double> bin_edges;
@@ -201,10 +235,10 @@ class BinManager
       }
     }
 
-    // If a maximum bin error is set
+    // If a maximum bin error is not set return the bin edges
     if(config->max_error <= 0) return all_bin_edges;
 
-
+    // Loop over the plotting variables
     for(size_t i = 0; i < config->plot_variables.size(); i++){
       // Get the optimal binning for the first variable
       TH1D *temp_hist = new TH1D("temp_hist", "", hist_bins[i], hist_min[i], hist_max[i]);
@@ -226,13 +260,15 @@ class BinManager
     return all_bin_edges;
   }
 
+  // Get the two dimensional binning from slicing in one variable
   std::vector<std::vector<double>> GetBinning2D(const std::vector<std::vector<double>> &data_v, std::vector<std::vector<double>> bin_edges, size_t i, size_t j){
 
-    // Perform two dimensional rebinning
+    // Get the bin edges as arrays
     double xedges_array[bin_edges[i].size()];
     std::copy(bin_edges[i].begin(), bin_edges[i].end(), xedges_array);
     double yedges_array[bin_edges[j].size()];
     std::copy(bin_edges[j].begin(), bin_edges[j].end(), yedges_array);
+
     // Create 2D histogram with the calculated binning
     TH2D *temp_hist = new TH2D("temp_hist", "", bin_edges[i].size()-1, xedges_array, bin_edges[j].size()-1, yedges_array);
     // Fill with the data
@@ -245,6 +281,8 @@ class BinManager
         temp_hist->SetBinContent(x, y, temp_hist->GetBinContent(x, y)*config->pot_scale_fac[0]);
       }
     }
+
+    // If maximum error is not set return the bin edges
     if(config->max_error <= 0){
       std::vector<std::vector<double>> all_edges;
       for(int y = 1; y <= temp_hist->GetNbinsY(); y++){
@@ -253,6 +291,8 @@ class BinManager
       delete temp_hist;
       return all_edges;
     }
+
+    // Otherwise rebin
     std::vector<std::vector<double>> all_bin_edges = ChangeBinning2D(temp_hist, bin_edges[i]);
     delete temp_hist;
     

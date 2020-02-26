@@ -8,12 +8,12 @@ class SystSummary2D
 {
   public:
 
-  Systematics2D* genie;
-  Systematics2D* flux;
-  Systematics2D* detector;
-  Systematics2D* background;
-  Systematics2D* constant;
-  Systematics2D* total;
+  Systematics2D* genie;      // GENIE generator systematics
+  Systematics2D* flux;       // Flux systematics
+  Systematics2D* detector;   // Detector performance systematics
+  Systematics2D* background; // External background systematics
+  Systematics2D* constant;   // Constant systematics
+  Systematics2D* total;      // Total systematics
 
   // Constructor
   SystSummary2D(TH2Poly* hist, std::vector<double> yb, std::vector<std::vector<double>> xb){
@@ -25,6 +25,7 @@ class SystSummary2D
     total = new Systematics2D(hist, "_totalsyst", yb, xb);
   }
 
+  // Get systematic by name
   Systematics2D* GetSyst(TString name){
     if(name == "genie") return genie;
     if(name == "flux") return flux;
@@ -36,6 +37,7 @@ class SystSummary2D
 
   // Calculate total errors assuming uncorrelated
   void GetTotal(){
+    ClearErrors(total);
     AddSyst(total, genie);
     AddSyst(total, flux);
     AddSyst(total, detector);
@@ -45,20 +47,34 @@ class SystSummary2D
     int nbins = total->mean_syst->GetNumberOfBins();
 
     for(int i = 1; i <= nbins; i++){
+      // Central value in bin i
       double cv_i = total->mean_syst->GetBinContent(i);
+      // Error on bin i
       double s_ii = std::sqrt(total->covariance->GetBinContent(i, i));
+
       for(int j = 1; j <= nbins; j++){
+        // Covariance of bin i and bin j
         double cov_ij = total->covariance->GetBinContent(i, j);
+        // Central value in bin j
         double cv_j = total->mean_syst->GetBinContent(j);
+        // Error on bin j
         double s_jj = std::sqrt(total->covariance->GetBinContent(j, j));
+        // Fractional covariance and correlation calculation
         total->frac_covariance->SetBinContent(i, j, cov_ij/(cv_i*cv_j));
         total->correlation->SetBinContent(i, j, cov_ij/(s_ii*s_jj));
-        //if(cov_ij==0||(s_ii*s_jj)==0||isnan(s_ii*s_jj)) total->correlation->SetBinContent(i, j, 0.000001);
         if(i==j) total->correlation->SetBinContent(i, j, 1);
       }
     }
   }
+  
+  // Delete the systematic errors
+  void ClearErrors(Systematics2D* s1){
+    for(int i = 1; i <= s1->std_syst->GetNumberOfBins(); i++){
+      s1->std_syst->SetBinContent(i, 0);
+    }
+  }
 
+  // Add the errors and covariance matrices
   void AddSyst(Systematics2D* s1, Systematics2D* s2){
     AddErrors(s1->std_syst, s2->std_syst);
     s1->covariance->Add(s2->covariance);

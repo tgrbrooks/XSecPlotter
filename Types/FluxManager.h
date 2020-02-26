@@ -10,17 +10,17 @@ class FluxManager
 
   Configuration *config; // Global configurations
 
-  double pot;
+  double pot;            // Total simulated POT in flux file
 
-  double numu_flux;
-  double antinumu_flux;
-  double nue_flux;
-  double antinue_flux;
+  double numu_flux;      // Muon neutrino flux
+  double antinumu_flux;  // Muon anti-neutrino flux
+  double nue_flux;       // Electron neutrino flux
+  double antinue_flux;   // Electron anti-neutrino flux
 
-  std::vector<double> numu_uni;
-  std::vector<double> antinumu_uni;
-  std::vector<double> nue_uni;
-  std::vector<double> antinue_uni;
+  std::vector<double> numu_uni;     // Reweighted muon neutrino flux
+  std::vector<double> antinumu_uni; // Reweighted muon anti-neutrino flux
+  std::vector<double> nue_uni;      // Reweighted electron neutrino flux
+  std::vector<double> antinue_uni;  // Reweighted electron anti-neutrino flux
 
   // Constructor
   FluxManager(Configuration *c)
@@ -69,7 +69,6 @@ class FluxManager
       antinue_uni.push_back(antinue_integral);
     }
 
-    std::cout<<"int flux = "<<IntegratedFlux()<<"\n";
   }
 
   // Get the integrated flux
@@ -105,6 +104,7 @@ class FluxManager
     return int_flux * pot_scale / (pot * 400 * 400);
   }
 
+  // Get the POT from the flux file
   double GetPot(TString name, TString path){
 
     TFile f(name);

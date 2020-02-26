@@ -41,6 +41,7 @@
 #include "Types/HistManager.h"
 #include "Types/DataManager.h"
 #include "Types/SystCalculator.h"
+#include "Types/XSecSystCalculator.h"
 #include "Types/Interaction.h"
 #include "Types/Selection.h"
 #include "Types/ChiSquare.h"
@@ -62,6 +63,8 @@ void XSecPlotter(){
   std::string input_file = "config.txt";
   Configuration *config = new Configuration(input_file);
   config->GetMetaData();
+  config->PrintSummary();
+  // Get the flux from a file
   FluxManager *fluxman = new FluxManager(config);
   std::cout<<"...Finished.\n";
 
@@ -84,6 +87,7 @@ void XSecPlotter(){
   }
   std::cout<<"...Finished.\n";
 
+  // Check that files have been specified
   if(datamans.size() < 1){
     std::cout<<"Not enough input files\n";
     exit(1);
@@ -103,7 +107,9 @@ void XSecPlotter(){
   std::cout<<"Creating all of the histograms...\n";
   std::vector<HistManager*> histmans;
   for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
-    HistManager *histman = new HistManager(config, titles, datamans[file_i], binman, file_i);
+    // Create a cross section calculator for each file
+    XSecCalculator *xsec = new XSecCalculator(config, fluxman, file_i);
+    HistManager *histman = new HistManager(config, titles, datamans[file_i], binman, xsec, file_i);
     histmans.push_back(histman);
   }
   std::cout<<"...Finished.\n";
@@ -116,7 +122,14 @@ void XSecPlotter(){
   if(config->show_syst_error){
     std::cout<<"Calculating the systematics...\n";
     for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
-      SystCalculator(config, histmans[file_i], datamans[file_i], file_i);
+      // Systematics are handeled differently between cross section and rate
+      if(config->plot_xsec){
+        XSecSystCalculator(config, histmans[file_i], datamans[file_i], file_i);
+      }
+      // If plotting rate
+      else{
+        SystCalculator(config, histmans[file_i], datamans[file_i], file_i);
+      }
     }
     std::cout<<"...Finished.\n";
   }
@@ -161,13 +174,20 @@ void XSecPlotter(){
     // If the systematics are calculated make individual plots for each
     if(config->show_syst_error){
       for(auto const& systname : config->systematics){
-        if(config->show_error_band) plotter->Plot1DWithErrors(histos_1D, i, systname);
-        else plotter->Plot1D(histos_1D, i, systname);
+        if(config->plot_xsec){
+          if(config->show_error_band) plotter->Plot1DWithErrorsXSec(histos_1D, i, -1, systname);
+          else plotter->Plot1DXSec(histos_1D, i, -1, systname);
+        }
+        else{
+          if(config->show_error_band) plotter->Plot1DWithErrors(histos_1D, i, systname);
+          else plotter->Plot1D(histos_1D, i, systname);
+        }
       }
     }
 
     // Plot correlation, covariance, and universes for first file if selected
     if(config->plot_correlation && config->show_syst_error){
+      std::cout<<"Plotting matrices\n";
       plotter->PlotAllSysts(histmans[0]->GetHisto1D(i));
     }
 
@@ -178,7 +198,13 @@ void XSecPlotter(){
 
     // If two input files used calculate chi2 between models
     if(config->input_file.size() == 2){
-      std::pair<double, int> chindof = chsq.Calculate(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
+      std::pair<double, int> chindof; 
+      if(config->plot_xsec){
+        chindof = chsq.Calculate(histmans[0]->GetHisto1D(i)->xsec_hist, histmans[1]->GetHisto1D(i), true);
+      }
+      else {
+        chindof = chsq.Calculate(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
+      }
       std::cout<<"1D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
     }
   }
@@ -198,10 +224,12 @@ void XSecPlotter(){
 
     // Plot the 2D histogram
     plotter->Plot2DHisto(histmans[0]->GetHisto2D(0, 1), 0, 1);
+    // Plot the binning
+    plotter->Plot2DHisto(histmans[0]->GetHisto2D(0, 1), 0, 1, true);
 
     // If selected, plot all of the slices
     if(config->plot_slices){
-      plotter->Plot2DSlices(histos_2D, 0);
+      plotter->Plot2DSlices(histos_2D, 0, 1);
     }
 
     // Plot correlation, covariance and universes for first file if selected
@@ -216,7 +244,13 @@ void XSecPlotter(){
 
     // If more than two input files, calculate chi2
     if(config->input_file.size() == 2){
-      std::pair<double, int> chindof = chsq.Calculate(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
+      std::pair<double, int> chindof; 
+      if(config->plot_xsec){
+        chindof = chsq.Calculate(histmans[0]->GetHisto2D(0, 1)->xsec_hist, histmans[1]->GetHisto2D(0, 1), true);
+      }
+      else{
+        chindof = chsq.Calculate(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
+      }
       std::cout<<"2D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
     }
   }

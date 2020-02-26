@@ -5,6 +5,7 @@
 #include "Titles.h"
 #include "DataManager.h"
 #include "BinManager.h"
+#include "XSecCalculator.h"
 #include "Histo1D.h"
 #include "Histo2D.h"
 
@@ -13,32 +14,38 @@ class HistManager
 {
   public:
 
-  Configuration *config;
-  Titles *titles;
-  DataManager *dataman;
-  BinManager *binman;
-  size_t file_i;
+  Configuration *config; // Global configuration
+  Titles *titles;        // Histogram titles
+  DataManager *dataman;  // Stored data
+  BinManager *binman;    // Histogram binnings
+  XSecCalculator *xsec;  // Cross section calculator functions
 
-  Histo1D* total;
-  std::map<TString, Histo1D*> histos_1D;
-  std::map<std::pair<TString, TString>, Histo2D*> histos_2D;
+  size_t file_i; // File index
+
+  Histo1D* total;                                            // Total histogram
+  std::map<TString, Histo1D*> histos_1D;                     // All 1D histograms
+  std::map<std::pair<TString, TString>, Histo2D*> histos_2D; // All 2D histograms
 
   // Constructor
-  HistManager(Configuration *c, Titles *t, DataManager *d, BinManager *b, size_t f)
+  HistManager(Configuration *c, Titles *t, DataManager *d, BinManager *b, XSecCalculator *x, size_t f)
   {
     config = c;
     titles = t;
     dataman = d;
     binman = b;
+    xsec = x;
     file_i = f;
 
     // Total event rate
     TH1D* hist0D = GetTotal();
     total = new Histo1D(hist0D);
+    // Calculate the cross section if plotting
     if(config->plot_xsec){
       SetBackground();
       SetEfficiency();
+      SetXSec();
     }
+
     // 1D histograms
     for(size_t i = 0; i < config->plot_variables.size(); i++){
       TString key1D = config->plot_variables[i];
@@ -55,6 +62,8 @@ class HistManager
       if(config->plot_xsec) SetBackground(i);
       if(config->plot_eff_pur || config->plot_xsec) SetEfficiency(i);
       if(config->plot_response || config->plot_xsec) SetResponse(i);
+      if(config->plot_xsec) SetXSec(i);
+
       // 2D histograms
       for(size_t j = 0; j < config->plot_variables.size(); j++){
         if(i==j) continue;
@@ -76,6 +85,7 @@ class HistManager
         if(config->plot_xsec) SetBackground(i, j);
         if(config->plot_eff_pur || config->plot_xsec) SetEfficiency(i, j);
         if(config->plot_response || config->plot_xsec) SetResponse(i, j, hist2D);
+        if(config->plot_xsec) SetXSec(i, j);
       }
     }
     
@@ -148,7 +158,6 @@ class HistManager
 
   // Scale each universe by pot, xsec, bin width where appropriate
   void ScaleUniverses(TString syst){
-    // TODO only scale by xsec for total
     total->systematics->GetSyst(syst)->ScaleUniverses(config, file_i);
     for(auto& kv : histos_1D){
       kv.second->systematics->GetSyst(syst)->ScaleUniverses(config, file_i);
@@ -160,12 +169,140 @@ class HistManager
 
   // Calculate mean, covariance and correlation for universe variations
   void CalculateSyst(TString syst){
-    total->systematics->GetSyst(syst)->Calculate();
+    if(config->plot_xsec){
+      total->systematics->GetSyst(syst)->Calculate(total->xsec_hist);
+    }
+    else{
+      total->systematics->GetSyst(syst)->Calculate(total->total_hist);
+    }
     for(auto& kv : histos_1D){
-      kv.second->systematics->GetSyst(syst)->Calculate();
+      if(config->plot_xsec){
+        kv.second->systematics->GetSyst(syst)->Calculate(kv.second->xsec_hist);
+      }
+      else{
+        kv.second->systematics->GetSyst(syst)->Calculate(kv.second->total_hist);
+      }
     }
     for(auto& kv : histos_2D){
-      kv.second->systematics->GetSyst(syst)->Calculate();
+      if(config->plot_xsec){
+        kv.second->systematics->GetSyst(syst)->Calculate(kv.second->total_hist);
+      }
+      else{
+        kv.second->systematics->GetSyst(syst)->Calculate(kv.second->total_hist);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                      HANDLING XSEC SYSTEMATIC UNIVERSES
+  // ------------------------------------------------------------------------------------------------------------------
+  
+  // Create cross section universes
+  void CreateXSecUni(TString syst, int n){
+    total->systematics->GetSyst(syst)->CreateXSecUni(n);
+    for(auto& kv : histos_1D){
+      kv.second->systematics->GetSyst(syst)->CreateXSecUni(n);
+    }
+    for(auto& kv : histos_2D){
+      kv.second->systematics->GetSyst(syst)->CreateXSecUni(n);
+    }
+  }
+
+  // Fill cross section universes with reweighting systematic variations for all histograms
+  void FillXSecUni(TString syst, int index, int uni, double weight){
+
+    // Is the true interaction part of selection
+    bool is_true = dataman->interactions[index].true_selected;
+    // Is the reconstructed interaction selected
+    bool sel = dataman->interactions[index].selected;
+
+    // Fill histograms needed for folded cross section calculation
+    // Total
+    if(is_true){
+      // Fill true generated histograms
+      total->systematics->GetSyst(syst)->xsecuni[uni]->generated->Fill(1., weight);
+    }
+    if(sel){
+      // Fill true selected histograms
+      if(is_true){
+        total->systematics->GetSyst(syst)->xsecuni[uni]->selected->Fill(1., weight);
+      }
+      // Fill background histograms
+      else{
+        total->systematics->GetSyst(syst)->xsecuni[uni]->background->Fill(1., weight);
+      }
+    }
+
+    // 1D
+    for(size_t i = 0; i < config->plot_variables.size(); i++){
+      TString k1D = config->plot_variables[i];
+      double data_i = dataman->interactions[index].variables[i];
+      double true_data_i = dataman->interactions[index].true_variables[i];
+      if(is_true){
+        // Fill true generated histograms
+        histos_1D[k1D]->systematics->GetSyst(syst)->xsecuni[uni]->generated->Fill(true_data_i, weight);
+        // Fill migration matrices
+        if(data_i != -99999){
+          histos_1D[k1D]->systematics->GetSyst(syst)->xsecuni[uni]->migration->Fill(true_data_i, data_i);
+        }
+      }
+      if(sel){
+        // Fill true selected histograms
+        if(is_true){
+          histos_1D[k1D]->systematics->GetSyst(syst)->xsecuni[uni]->selected->Fill(true_data_i, weight);
+        }
+        // Fill background histograms
+        else{
+          histos_1D[k1D]->systematics->GetSyst(syst)->xsecuni[uni]->background->Fill(data_i, weight);
+        }
+      }
+
+      for(size_t j = 0; j < config->plot_variables.size(); j++){
+        if(i==j) continue;
+        std::pair<TString, TString> k2D = std::make_pair(k1D, config->plot_variables[j]);
+        double data_j = dataman->interactions[index].variables[j];
+        double true_data_j = dataman->interactions[index].true_variables[j];
+        if(is_true){
+          // Fill true generated histograms
+          histos_2D[k2D]->systematics->GetSyst(syst)->xsecuni[uni]->generated->Fill(true_data_i, true_data_j, weight);
+          // Fill migration matrices
+          if(data_i != -99999 && data_j != -99999){
+            int true_bin = histos_2D[k2D]->total_hist->FindBin(true_data_i, true_data_j);
+            int reco_bin = histos_2D[k2D]->total_hist->FindBin(data_i, data_j);
+            histos_2D[k2D]->systematics->GetSyst(syst)->xsecuni[uni]->migration->Fill(true_bin-0.5, reco_bin-0.5);
+          }
+        }
+        if(sel){
+          // Fill true selected histograms
+          if(is_true){
+            histos_2D[k2D]->systematics->GetSyst(syst)->xsecuni[uni]->selected->Fill(true_data_i, true_data_j, weight);
+          }
+          // Fill background histograms
+          else{
+            histos_2D[k2D]->systematics->GetSyst(syst)->xsecuni[uni]->background->Fill(data_i, data_j, weight);
+          }
+        }
+      }
+    }
+
+  }
+
+  // Calculate the cross section from universe variations for all histograms
+  void CalculateXSec(TString syst){
+    int nuni = total->systematics->GetSyst(syst)->xsecuni.size();
+    for(size_t i = 0; i < nuni; i++){
+      TH1D *xsec_total_temp = xsec->ToXSec(total->systematics->GetSyst(syst)->xsecuni[i], total->total_hist, syst, i);
+      total->systematics->GetSyst(syst)->universes[i]->Add(xsec_total_temp);
+      for(auto& kv : histos_1D){
+        TH1D *xsec_1D_temp = xsec->ToXSec(kv.second->systematics->GetSyst(syst)->xsecuni[i], kv.second->total_hist, syst, i);
+        kv.second->systematics->GetSyst(syst)->universes[i]->Add(xsec_1D_temp); 
+      }
+      for(auto& kv : histos_2D){
+        TH2Poly *xsec_2D_temp = xsec->ToXSec(kv.second->systematics->GetSyst(syst)->xsecuni[i], kv.second->total_hist, syst, i);
+        for(size_t j = 0; j <= xsec_2D_temp->GetNumberOfBins()+1; j++){
+          kv.second->systematics->GetSyst(syst)->universes[i]->SetBinContent(j, xsec_2D_temp->GetBinContent(j)); 
+        }
+      }
     }
   }
 
@@ -182,9 +319,9 @@ class HistManager
         total->bkg_hist->Fill(1);
       }
     }
+    total->bkg_hist->SetBinContent(1, total->bkg_hist->GetBinContent(1)*config->pot_scale_fac[file_i]);
 
   }
-  
 
   // Calculate the background for 1D histograms
   void SetBackground(size_t var_i){
@@ -197,6 +334,11 @@ class HistManager
         histos_1D[plot_var]->bkg_hist->Fill(in.true_variables[var_i]);
       }
     }
+    for(int n = 0; n <= histos_1D[plot_var]->bkg_hist->GetNbinsX(); n++){
+      histos_1D[plot_var]->bkg_hist->SetBinContent(n, histos_1D[plot_var]->bkg_hist->GetBinContent(n)*config->pot_scale_fac[file_i]);
+    }
+    // If plotting cross section convert from rate
+    histos_1D[plot_var]->bkg_hist->Scale(1, "width");
 
   }
 
@@ -211,6 +353,11 @@ class HistManager
         histos_2D[key]->bkg_hist->Fill(in.true_variables[var_i], in.true_variables[var_j]);
       }
     }
+    for(int n = 0; n <= histos_2D[key]->bkg_hist->GetNumberOfBins(); n++){
+      histos_2D[key]->bkg_hist->SetBinContent(n, histos_2D[key]->bkg_hist->GetBinContent(n)*config->pot_scale_fac[file_i]);
+    }
+    // If plotting cross section convert from rate
+    histos_2D[key]->bkg_hist->Scale(1, "width");
 
   }
 
@@ -302,7 +449,6 @@ class HistManager
     int index = 0;
     for(auto const& in : dataman->interactions){
       // Response matrix for all reconstructed events that are selected in truth
-      // TODO check this
       if(in.true_selected && in.variables[var_i] != -99999){
         temp_response->Fill(in.true_variables[var_i], in.variables[var_i]);
       }
@@ -356,7 +502,6 @@ class HistManager
       }   
       // Loop over the reco bins again and fill with number of events in reco bin from true bin / total in true bin
       for(int bin_i = 1; bin_i <= nbins; bin_i++){
-        //std::cout<<"tbin "<<bin_j<<" rbin "<<bin_i<<" total = "<<total<<" nij = "<<response->GetBinContent(bin_j, bin_i)<<"\n";
         histos_2D[key]->response->SetBinContent(bin_j, bin_i, (double)response->GetBinContent(bin_j, bin_i)/total);
         if(response->GetBinContent(bin_j, bin_i)==0){
           histos_2D[key]->response->SetBinContent(bin_j, bin_i, 0.000001);
@@ -367,6 +512,56 @@ class HistManager
 
   }
 
+  // ------------------------------------------------------------------------------------------------------------------
+  //                                        CROSS SECTION CONVERSION
+  // ------------------------------------------------------------------------------------------------------------------
+
+  // Calculate the total cross section
+  void SetXSec(){
+    total->xsec_hist = xsec->ToXSec(total);
+    // Set the total systematic histogram
+    for(size_t i = 0; i <= total->xsec_hist->GetNbinsX()+1; i++){
+      total->systematics->GetSyst("total")->mean_syst->SetBinContent(i, total->xsec_hist->GetBinContent(i));
+    }
+  }
+
+  // Calculate the 1D cross section
+  void SetXSec(int var_i){
+    TString key = config->plot_variables[var_i];
+    histos_1D[key]->xsec_hist = xsec->ToXSec(histos_1D[key]);
+
+    // Do a little formatting
+    histos_1D[key]->xsec_hist->SetFillColor(config->cols[2*file_i]);
+    histos_1D[key]->xsec_hist->SetLineColor(config->cols[2*file_i]);
+    if(!config->plot_filled){
+      histos_1D[key]->xsec_hist->SetFillColor(0);
+      histos_1D[key]->xsec_hist->SetLineWidth(3);
+    }
+
+    // Set the total systematic histogram
+    for(size_t i = 0; i <= histos_1D[key]->xsec_hist->GetNbinsX()+1; i++){
+      histos_1D[key]->systematics->GetSyst("total")->mean_syst->SetBinContent(i, histos_1D[key]->xsec_hist->GetBinContent(i));
+    }
+  }
+
+  // Calculate the 2D cross section
+  void SetXSec(int var_i, int var_j){
+    std::pair<TString, TString> key = std::make_pair(config->plot_variables[var_i], config->plot_variables[var_j]);
+    histos_2D[key]->xsec_hist = xsec->ToXSec(histos_2D[key]);
+
+    // Do a little formatting
+    histos_2D[key]->xsec_hist->SetFillColor(config->cols[2*file_i]);
+    histos_2D[key]->xsec_hist->SetLineColor(config->cols[2*file_i]);
+    if(!config->plot_filled){
+      histos_2D[key]->xsec_hist->SetFillColor(0);
+      histos_2D[key]->xsec_hist->SetLineWidth(3);
+    }
+
+    // Set the total systematic histogram
+    for(size_t i = 0; i <= histos_2D[key]->xsec_hist->GetNumberOfBins()+1; i++){
+      histos_2D[key]->systematics->GetSyst("total")->mean_syst->SetBinContent(i, histos_2D[key]->xsec_hist->GetBinContent(i));
+    }
+  }
   
   // ------------------------------------------------------------------------------------------------------------------
   //                                        TOTAL RATE HISTOGRAM CREATION
@@ -385,11 +580,7 @@ class HistManager
       total++;
     }
     total_hist->SetBinContent(1, total_hist->GetBinContent(1)*config->pot_scale_fac[file_i]);
-    // If plotting cross section convert from rate
-    /*if(config->plot_xsec){
-      double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
-      total_hist->Scale(xsec_scale);
-    }*/
+
     return total_hist;
     
   }
@@ -419,14 +610,6 @@ class HistManager
       hist->Scale(config->pot_scale_fac[file_i]);
       // If plotting cross section convert from rate
       hist->Scale(1, "width");
-      /*if(config->plot_xsec){
-        double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
-        hist->Scale(xsec_scale, "width");
-      }
-      // Else if max error used divide each bin by width
-      else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
-        hist->Scale(1, "width");
-      }*/
       hist->SetFillColor(config->cols[index+2*file_i]);
       hist->SetLineColor(config->cols[index+2*file_i]);
       if(!config->plot_filled){
@@ -460,14 +643,6 @@ class HistManager
     }
     // If plotting cross section convert from rate
     total_hist->Scale(1, "width");
-    /*if(config->plot_xsec){
-      double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
-      total_hist->Scale(xsec_scale, "width");
-    }
-    // Else if max error used divide each bin by width FIXME is this ok for stat errors?
-    else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
-      total_hist->Scale(1, "width");
-    }*/
     total_hist->SetLineColor(config->cols[0+2*file_i]);
     return total_hist;
   }
@@ -517,16 +692,6 @@ class HistManager
         // If plotting cross section convert from rate
         double width = (ybin_edges[bin_j+1] - ybin_edges[bin_j]);
         hist->Scale(1/width, "width");
-        /*if(config->plot_xsec){
-          double width = (ybin_edges[bin_j+1] - ybin_edges[bin_j]);
-          double xsec_scale = 1e38/(width * config->flux[file_i] * config->targets);
-          hist->Scale(xsec_scale, "width");
-        }
-        // Else if max error used divide each bin by width
-        else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
-          double width = (ybin_edges[bin_j+1] - ybin_edges[bin_j]);
-          hist->Scale(1/width, "width");
-        }*/
         hist->SetFillColor(config->cols[index]+file_i);
         hist->SetLineColor(config->cols[index]+file_i);
         if(file_i != 0){
@@ -580,14 +745,6 @@ class HistManager
     }
     // If plotting cross section convert from rate
     total_hist->Scale(1, "width");
-    /*if(config->plot_xsec){
-      double xsec_scale = 1e38/(config->flux[file_i] * config->targets);
-      total_hist->Scale(xsec_scale, "width");
-    }
-    // Else if max error used divide each bin by width
-    else if (config->max_error > 0 || config->bin_edges[var_i].size()>1){
-      total_hist->Scale(1, "width");
-    }*/
     total_hist->SetLineColor(config->cols[0]+file_i);
     return total_hist;
   }

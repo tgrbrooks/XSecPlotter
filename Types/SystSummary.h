@@ -8,12 +8,12 @@ class SystSummary
 {
   public:
 
-  Systematics* genie;
-  Systematics* flux;
-  Systematics* detector;
-  Systematics* background;
-  Systematics* constant;
-  Systematics* total;
+  Systematics* genie;      // GENIE generator systematics
+  Systematics* flux;       // Flux systematics
+  Systematics* detector;   // Detector performance systematics
+  Systematics* background; // External background systematics
+  Systematics* constant;   // Constant systematics
+  Systematics* total;      // Total systematics
 
   // Constructor
   SystSummary(TH1D* hist){
@@ -36,6 +36,7 @@ class SystSummary
     total = t;
   }
 
+  // Return systematic by name
   Systematics* GetSyst(TString name){
     if(name == "genie") return genie;
     if(name == "flux") return flux;
@@ -45,7 +46,6 @@ class SystSummary
     return total;
   }
   
-
   // Calculate the total error assuming uncorrelated
   void GetTotal(){
     ClearErrors(total);
@@ -55,25 +55,35 @@ class SystSummary
     AddSyst(total, background);
     AddSyst(total, constant);
 
+    // Get the fractional covariance and correlation from covariance
     for(int i = 1; i <= total->mean_syst->GetNbinsX(); i++){
+      // Central value in bin i
       double cv_i = total->mean_syst->GetBinContent(i);
+      // Error on bin i
       double s_ii = std::sqrt(total->covariance->GetBinContent(i, i));
+
       for(int j = 1; j <= total->mean_syst->GetNbinsX(); j++){
+        // Covariance of bin i and bin j
         double cov_ij = total->covariance->GetBinContent(i, j);
+        // Central value in bin i
         double cv_j = total->mean_syst->GetBinContent(j);
+        // Error on bin j
         double s_jj = std::sqrt(total->covariance->GetBinContent(j, j));
+        // Fractional covariance and correlation calculation
         total->frac_covariance->SetBinContent(i, j, cov_ij/(cv_i*cv_j));
         total->correlation->SetBinContent(i, j, cov_ij/(s_ii*s_jj));
       }
     }
   }
 
+  // Delete the systematic errors
   void ClearErrors(Systematics* s1){
     for(int i = 1; i <= s1->mean_syst->GetNbinsX(); i++){
       s1->mean_syst->SetBinError(i, 0);
     }
   }
 
+  // Add the errors and covariance matrices
   void AddSyst(Systematics* s1, Systematics* s2){
     AddErrors(s1->mean_syst, s2->mean_syst);
     s1->covariance->Add(s2->covariance);

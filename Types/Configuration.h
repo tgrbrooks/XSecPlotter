@@ -7,50 +7,49 @@ class Configuration
   public:
 
   // File configurations
-  std::vector<TString> input_file; // Input tree files
-  std::vector<TString> tune_name; // Names of tunes/configurations corresponding to each file
-  TString output_file; // Location, seed string and file type of outputs
+  std::vector<TString> input_file;      // Input tree files
+  std::vector<TString> tune_name;       // Names of tunes/configurations corresponding to each file
+  TString output_file;                  // Location, seed string and file type of outputs
   // Neutrino interaction configurations
-  std::vector<int> nu_pdg; // Neutrino PDG codes to select
-  std::vector<int> is_cc; // Charged current or neutral current or both
-  std::vector<bool> contained_lepton; // Lepton contained/exiting/both
+  std::vector<int> nu_pdg;              // Neutrino PDG codes to select
+  std::vector<int> is_cc;               // Charged current or neutral current or both
+  std::vector<bool> contained_lepton;   // Lepton contained/exiting/both
   std::vector<bool> contained_particles; // Particles contained/exiting/both
-  std::vector<double> fiducial; // Fiducial volume definition
-  bool plot_by_fsi = false; // Plot by FSI or true interaction type
-  std::vector<int> num_protons; // Number of protons to select
-  std::vector<int> num_pipm; // Number of charged pions to select
-  std::vector<int> num_pi0; // Number of pi0 to select
-  std::vector<int> interaction_type; // True interaction type to select
+  std::vector<double> fiducial;          // Fiducial volume definition
+  bool plot_by_fsi = false;              // Plot by FSI or true interaction type
+  std::vector<int> num_protons;          // Number of protons to select
+  std::vector<int> num_pipm;             // Number of charged pions to select
+  std::vector<int> num_pi0;              // Number of pi0 to select
+  std::vector<int> interaction_type;     // True interaction type to select
   // Plotting variable configurations
-  TString stage = "true"; // Simulation/reconstruction stage to plot
-  std::vector<TString> plot_variables; // Variables to plot in
-  bool plot_slices = false; // Show slices of 2D histogram
-  double pot_scale = -1; // POT to scale to
+  TString stage = "true";                // Simulation/reconstruction stage to plot
+  std::vector<TString> plot_variables;   // Variables to plot in
+  bool plot_slices = false;              // Show slices of 2D histogram
+  double pot_scale = -1;                 // POT to scale to
   // Plotting option configurations
-  bool plot_stacked = false; // Plot stacked histogram by type
-  TString stack_by = "int"; // Truth label to stack histogram in
-  std::vector<double> min_value; // Min histogram value per plotting variable
-  std::vector<double> max_value; // Max histogram value per plotting variable
-  std::vector<int> num_bins; // Default number of bins per plotting variable
+  bool plot_stacked = false;             // Plot stacked histogram by type
+  TString stack_by = "int";              // Truth label to stack histogram in
+  std::vector<double> min_value;         // Min histogram value per plotting variable
+  std::vector<double> max_value;         // Max histogram value per plotting variable
+  std::vector<int> num_bins;             // Default number of bins per plotting variable
   std::vector<std::vector<double>> bin_edges; // User defined bin edges
-  double max_error = -1; // Maximum percentage error per bin
-  bool plot_xsec = false; // Plot cross section rather than rate
-  bool plot_filled = false; // Plot filled histograms
+  double max_error = -1;                 // Maximum percentage error per bin
+  bool plot_xsec = false;                // Plot cross section rather than rate
+  bool plot_filled = false;              // Plot filled histograms
   // Optional extras
-  bool show_info = false; // Show extra info on plots
-  bool show_error_band = false; // Show percentage error band under plot
-  bool show_stat_error = false; // Show statistical uncertainties
-  bool show_syst_error = false; // Calculate and show systematic uncertainties
-  std::vector<TString> systematics; // Systematics to apply
-  double constant_syst = 0; // Flat systematic uncertainty
-  int detector_nuni = 50; // Number of universes for detector systematics
-  int reweight_nuni = 100; // Number of universes for reweighting systematics
-  bool show_error_bars = false; // Show error bars on plots
-  bool plot_correlation = false; // Plot systematic correlation/covariance matrices
-  bool plot_universes = false; // Plot universe variations
-  bool plot_eff_pur = false; // Plot efficiency and purity
-  bool plot_response = false; // Plot response matrix
-  bool unfold = false; //TODO
+  bool show_info = false;                // Show extra info on plots
+  bool show_error_band = false;          // Show percentage error band under plot
+  bool show_stat_error = false;          // Show statistical uncertainties
+  bool show_syst_error = false;          // Calculate and show systematic uncertainties
+  std::vector<TString> systematics;      // Systematics to apply
+  double constant_syst = 0;              // Flat systematic uncertainty
+  int detector_nuni = 50;                // Number of universes for detector systematics
+  int reweight_nuni = 100;               // Number of universes for reweighting systematics
+  bool show_error_bars = false;          // Show error bars on plots
+  bool plot_correlation = false;         // Plot systematic correlation/covariance matrices
+  bool plot_universes = false;           // Plot universe variations
+  bool plot_eff_pur = false;             // Plot efficiency and purity
+  bool plot_response = false;            // Plot response matrix
 
   // Set by functions
   std::vector<double> pot;
@@ -60,12 +59,12 @@ class Configuration
   double targets;
   // Constants
   // Integrated flux for each neutrino species
-  std::map<int, double> nu_flux = {{14, 1.305e13}, {-14, 1.011e12}, {12, 7.924e10}, {-12, 8.4133e9}}; //[/6.6e20POT/cm^2]
+  std::map<int, double> nu_flux = {{14, 1.305e13}, 
+                                   {-14, 1.011e12}, 
+                                   {12, 7.924e10}, 
+                                   {-12, 8.4133e9}}; //[/6.6e20POT/cm^2]
   std::vector<int> cols = {46, 33, 38, 42, 40, 30, 49};
 
-  // Constructor
-  //Configuration(){}
-  
   // Constructor
   Configuration(const std::string config_filename){
     Configure(config_filename);
@@ -132,7 +131,6 @@ class Configuration
       if(key.find("PlotUniverses") != std::string::npos)   plot_universes = (value=="true");
       if(key.find("PlotEffPur") != std::string::npos)      plot_eff_pur = (value=="true");
       if(key.find("PlotResponse") != std::string::npos)    plot_response = (value=="true");
-      if(key.find("Unfold") != std::string::npos)          unfold = (value=="true");
     }
  
     // Do some basic error checking
@@ -198,8 +196,8 @@ class Configuration
       }
       flux.push_back(flux_factor * pot[i] * pot_scale_fac[i] / 6.6e20); // [cm^-2]
     }
-    std::cout<<"Integrated flux = "<<flux[0]<<"\n";
 
+    // Get the volume taking in to account the fiducial volume definition
     double volume = 400*400*500; // [cm^3]
     if(std::find(fiducial.begin(), fiducial.end(), -1) == fiducial.end() && fiducial.size() == 6){
       volume = (400-fiducial[0]-fiducial[3])*(400-fiducial[1]-fiducial[4])*(500-fiducial[2]-fiducial[5]); // [cm^3]
@@ -207,12 +205,60 @@ class Configuration
     else if(std::find(fiducial.begin(), fiducial.end(), -1) == fiducial.end() && fiducial.size() == 8){
       volume = (400-fiducial[0]-fiducial[3]-2*fiducial[6])*(400-fiducial[1]-fiducial[4])*(500-fiducial[2]-fiducial[5]-2*fiducial[7]); // [cm^3]
     }
-    std::cout<<"volume = "<<volume<<"\n";
     fiducial_mass = 1.3973*volume/1e6; //[tons]
     targets = 6.022e23 * fiducial_mass * 1e3 * 40/ (0.03995); // [/nucleon]
-    std::cout<<"Number of targets = "<<targets<<"\n";
 
   }
+
+  void PrintSummary(){
+    std::cout<<"-------------------------------------------------\n"
+             <<"            Configuration summary:\n"
+             <<"-------------------------------------------------\n"
+             <<"              Physics Properties\n"
+             <<"-------------------------------------------------\n"
+             <<"Volume            = "<<fiducial_mass*1e6/1.3973<<" cm^3\n"
+             <<"Fiducial mass     = "<<fiducial_mass<<" tons\n"
+             <<"Number of targets = "<<targets<<"\n"
+             <<"Integrated flux   = "<<flux[0]<<" cm^{-2}\n"
+             <<"POT               = "<<pot[0]*pot_scale_fac[0]<<"\n"
+             <<"-------------------------------------------------\n"
+             <<"                  Selection\n"
+             <<"-------------------------------------------------\n"
+             <<"Stage               = "<<stage<<"\n"
+             <<"Neutrino PDG        = ";
+    for (auto const& npdg : nu_pdg) std::cout<<npdg<<" ";
+    std::cout<<"\n"
+             <<"CC/NC               = ";
+    for (auto const& ccnc : is_cc) std::cout<<ccnc<<" ";
+    std::cout<<"\n"
+             <<"Contained lepton    = ";
+    for (auto const& lc : contained_lepton) std::cout<<lc<<" ";
+    std::cout<<"\n"
+             <<"Contained particles = ";
+    for (auto const& pc : contained_particles) std::cout<<pc<<" ";
+    if(plot_by_fsi){
+    std::cout<<"\n"
+             <<"N protons           = ";
+    for (auto const& np : num_protons) std::cout<<np<<" ";
+    std::cout<<"\n"
+             <<"N charged pions     = ";
+    for (auto const& np : num_pipm) std::cout<<np<<" ";
+    std::cout<<"\n"
+             <<"N neutral pions     = ";
+    for (auto const& np : num_pi0) std::cout<<np<<" ";
+    std::cout<<"\n";
+    }
+    else{
+    std::cout<<"\n"
+             <<"Interaction codes   = ";
+    for (auto const& ic : interaction_type) std::cout<<ic<<" ";
+    }
+    std::cout<<"\n"
+             <<"Plotting variables  = ";
+    for (auto const& ic : plot_variables) std::cout<<ic<<" ";
+    std::cout<<"\n-------------------------------------------------\n";
+  }
+             
 
   // Helper functions
 

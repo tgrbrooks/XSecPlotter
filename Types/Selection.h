@@ -8,7 +8,7 @@ class Selection
 {
   public:
 
-  Configuration *config;
+  Configuration *config; // Floval configuration
 
   // Constructor
   Selection(Configuration *c)

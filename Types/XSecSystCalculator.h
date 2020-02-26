@@ -1,5 +1,5 @@
-#ifndef SYSTCALCULATOR_H
-#define SYSTCALCULATOR_H
+#ifndef XSECSYSTCALCULATOR_H
+#define XSECSYSTCALCULATOR_H
 
 #include "Configuration.h"
 #include "HistManager.h"
@@ -8,7 +8,7 @@
 #include "Selection.h"
 
 // Structure for holding interaction information
-class SystCalculator
+class XSecSystCalculator
 {
   public:
 
@@ -19,7 +19,7 @@ class SystCalculator
   size_t file_i; // Input file index
 
   // Constructor
-  SystCalculator(Configuration *c, HistManager *h, DataManager *d, size_t f)
+  XSecSystCalculator(Configuration *c, HistManager *h, DataManager *d, size_t f)
   {
     config = c;
     histman = h;
@@ -49,7 +49,7 @@ class SystCalculator
     // Calculate the total systematics for each histogram
     // Total
     histman->total->systematics->GetTotal();
-    histman->total->PrintSummary();
+    histman->total->PrintXSecSummary();
     // 2D histograms
     for(auto& kv : histman->histos_1D){
       kv.second->systematics->GetTotal();
@@ -71,15 +71,15 @@ class SystCalculator
     // Total systematics
     double err = config->constant_syst;
     for(int n = 1; n <= histman->total->total_hist->GetNbinsX(); n++){
-      histman->total->systematics->constant->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
-      histman->total->systematics->constant->mean_syst->SetBinError(n, err*histman->total->total_hist->GetBinContent(n));
+      histman->total->systematics->constant->mean_syst->SetBinContent(n, histman->total->xsec_hist->GetBinContent(n));
+      histman->total->systematics->constant->mean_syst->SetBinError(n, err*histman->total->xsec_hist->GetBinContent(n));
     }
 
     // 1D systematics
     for(auto& kv1D : histman->histos_1D){
       for(int n = 1; n <= kv1D.second->total_hist->GetNbinsX(); n++){
-        kv1D.second->systematics->constant->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
-        kv1D.second->systematics->constant->mean_syst->SetBinError(n, err*kv1D.second->total_hist->GetBinContent(n));
+        kv1D.second->systematics->constant->mean_syst->SetBinContent(n, kv1D.second->xsec_hist->GetBinContent(n));
+        kv1D.second->systematics->constant->mean_syst->SetBinError(n, err*kv1D.second->xsec_hist->GetBinContent(n));
       }
     }
 
@@ -87,8 +87,8 @@ class SystCalculator
     for(auto& kv2D : histman->histos_2D){
       for(int n = 1; n <= kv2D.second->total_hist->GetNumberOfBins(); n++){
         //Setting bin error for TH2Poly makes mad things happen! Just use another one for errors
-        kv2D.second->systematics->constant->mean_syst->SetBinContent(n, kv2D.second->total_hist->GetBinContent(n));
-        kv2D.second->systematics->constant->std_syst->SetBinContent(n, err*kv2D.second->total_hist->GetBinContent(n));
+        kv2D.second->systematics->constant->mean_syst->SetBinContent(n, kv2D.second->xsec_hist->GetBinContent(n));
+        kv2D.second->systematics->constant->std_syst->SetBinContent(n, err*kv2D.second->xsec_hist->GetBinContent(n));
       }
     }
 
@@ -167,33 +167,39 @@ class SystCalculator
   void GetBackgroundSysts(){
 
     // Background templates should all be scaled to 6.6e20
-    TFile *bkg_file = new TFile("Backgrounds/BackgroundTemplates.root", "READ");
+    TFile *bkg_file = new TFile("Background/BackgroundTemplates.root", "READ");
 
     // Check if file exists
     bool has_file = false;
     if(bkg_file->IsOpen()) has_file = true;
     if(!has_file) std::cout<<"No external background template file!\nUsing flat 1% systematic error\n";
 
-    // Get the template histograms
-    TH1D* hMomCos          = (TH1D*)bkg_file->Get("hMomCosErr");
-    TH1D* hCosThetaCos     = (TH1D*)bkg_file->Get("hCosThetaCosErr");
-    TH2D* hMomCosThetaCos  = (TH2D*)bkg_file->Get("hMomCosThetaCosErr");
-    TH1D* hMomDirt         = (TH1D*)bkg_file->Get("hMomDirtErr");
-    TH1D* hCosThetaDirt    = (TH1D*)bkg_file->Get("hCosThetaDirtErr");
+    // Read in the background template histograms from the file
+    TH1D* hMomCos = (TH1D*)bkg_file->Get("hMomCosErr");
+    TH1D* hCosThetaCos = (TH1D*)bkg_file->Get("hCosThetaCosErr");
+    TH2D* hMomCosThetaCos = (TH2D*)bkg_file->Get("hMomCosThetaCosErr");
+    TH1D* hMomDirt = (TH1D*)bkg_file->Get("hMomDirtErr");
+    TH1D* hCosThetaDirt = (TH1D*)bkg_file->Get("hCosThetaDirtErr");
     TH2D* hMomCosThetaDirt = (TH2D*)bkg_file->Get("hMomCosThetaDirtErr");
 
     // Total systematics
     for(int n = 1; n <= histman->total->total_hist->GetNbinsX(); n++){
+      // Default 1% systematic
       double tot_cos_err = 0.01*histman->total->total_hist->GetBinContent(n);
       double tot_dirt_err = 0;
+
+      // Get the errors from the templates
       if(has_file){
         tot_cos_err = TotalBkgError(hMomCos);
         tot_dirt_err = TotalBkgError(hMomDirt);
       }
-      // Add up the errors
+
+      // Add up cosmic and dirt errors
       double tot_err = std::sqrt(std::pow(tot_cos_err, 2.)+std::pow(tot_dirt_err, 2.));
-      histman->total->systematics->background->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
-      histman->total->systematics->background->mean_syst->SetBinError(n, tot_err);
+      double percent_tot_err = tot_err/histman->total->total_hist->GetBinContent(n);
+      // Set the central value and uncertainty
+      histman->total->systematics->background->mean_syst->SetBinContent(n, histman->total->xsec_hist->GetBinContent(n));
+      histman->total->systematics->background->mean_syst->SetBinError(n, percent_tot_err*histman->total->xsec_hist->GetBinContent(n));
     }
 
     // 1D systematics
@@ -204,7 +210,6 @@ class SystCalculator
         // Default 1% error
         double cos_sub_err = 0.01*kv1D.second->total_hist->GetBinContent(n);
         double dirt_sub_err = 0;
-
         // Determine the plotting variable
         if(kv1D.first=="lep_mom" && has_file){
           // Determine the bin of the background template
@@ -215,10 +220,10 @@ class SystCalculator
           cos_sub_err = BkgSubtractionError(mid, width, hCosThetaCos);
           dirt_sub_err = BkgSubtractionError(mid, width, hCosThetaDirt);
         }
-        // Add up the errors
         double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
-        kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
-        kv1D.second->systematics->background->mean_syst->SetBinError(n, tot_err);
+        double percent_tot_err = tot_err/kv1D.second->total_hist->GetBinContent(n);
+        kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->xsec_hist->GetBinContent(n));
+        kv1D.second->systematics->background->mean_syst->SetBinError(n, percent_tot_err*kv1D.second->xsec_hist->GetBinContent(n));
       }
     }
 
@@ -242,8 +247,6 @@ class SystCalculator
           mid_x = (bin->GetXMax() + bin->GetXMax())/2.;
           mid_y = (bin->GetYMax() + bin->GetYMax())/2.;
         }
-        
-        // Determine the plotting variables
         if(kv2D.first.first == "lep_mom" && kv2D.first.second == "cos_lep_theta" && has_file && width_x != -1){
           cos_sub_err = BkgSubtractionError(mid_x, width_x, mid_y, width_y, hMomCosThetaCos);
           dirt_sub_err = BkgSubtractionError(mid_x, width_x, mid_y, width_y, hMomCosThetaDirt);
@@ -252,11 +255,10 @@ class SystCalculator
           cos_sub_err = BkgSubtractionError(mid_y, width_y, mid_x, width_x, hMomCosThetaCos);
           dirt_sub_err = BkgSubtractionError(mid_y, width_y, mid_x, width_x, hMomCosThetaDirt);
         }
-
-        // Add up errors
         double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
-        kv2D.second->systematics->background->mean_syst->SetBinContent(i, kv2D.second->total_hist->GetBinContent(i));
-        kv2D.second->systematics->background->std_syst->SetBinContent(i, tot_err);
+        double percent_tot_err = tot_err/kv2D.second->total_hist->GetBinContent(i);
+        kv2D.second->systematics->background->mean_syst->SetBinContent(i, kv2D.second->xsec_hist->GetBinContent(i));
+        kv2D.second->systematics->background->std_syst->SetBinContent(i, percent_tot_err*kv2D.second->xsec_hist->GetBinContent(i));
       }
     }
 
@@ -276,8 +278,9 @@ class SystCalculator
 
     // Create empty histograms for universes
     histman->CreateUniverses("detector", nsims);
+    histman->CreateXSecUni("detector", nsims);
 
-    Selection sel(config);
+    Selection selection(config);
 
     // Read in variation data from file
     TFile data_file(config->input_file[file_i], "READ");
@@ -295,41 +298,78 @@ class SystCalculator
     TTreeReaderArray<double> lep_theta(tree_reader, "ds_lep_theta");
 
     // Loop over the tree entries
+    int index = 0;
+    std::cout<<"Detector systematics\n";
     while (tree_reader.Next()) {
 
       // Apply fiducial volume cut
-      if(!sel.InFiducial(*vtx_x, *vtx_y, *vtx_z)) continue;
+      if(!selection.InFiducial(*vtx_x, *vtx_y, *vtx_z)){ index++; continue; }
+      bool is_true = dataman->interactions[index].true_selected;
 
       // Loop over the universes
       for(int ns = 0; ns < nsims; ns++){
         // Apply selection
-        if(!sel.IsSelected(nu_pdg[ns], true, lep_contained[ns], particles_contained[ns], -1, -1, -1, -1)) continue;
+        bool sel = selection.IsSelected(nu_pdg[ns], true, lep_contained[ns], particles_contained[ns], -1, -1, -1, -1);
+
+        // Total
+        if(is_true) histman->total->systematics->detector->xsecuni[ns]->generated->Fill(1.);
+        if(sel){
+          if(is_true) histman->total->systematics->detector->xsecuni[ns]->selected->Fill(1.);
+          else histman->total->systematics->detector->xsecuni[ns]->background->Fill(1.);
+        }
 
         // Store values in a map
-        std::map<TString, double> val_map = {{"lep_mom", lep_mom[ns]}, 
-                                             {"cos_lep_theta", cos(lep_theta[ns])}, 
-                                             {"lep_theta", lep_theta[ns]}};
-        
-        // Total
-        histman->total->systematics->detector->universes[ns]->Fill(1.);
+        double cos_lep_theta = cos(lep_theta[ns]);
+        if(lep_theta[ns] == -99999) cos_lep_theta = -99999;
+        std::map<TString, double> val_map = {{"lep_mom", lep_mom[ns]}, {"cos_lep_theta", cos_lep_theta}, {"lep_theta", lep_theta[ns]}};
+
         // 1D histograms
-        for(auto& kv : histman->histos_1D){
-          if(val_map.find(kv.first) != val_map.end()){
-            kv.second->systematics->detector->universes[ns]->Fill(val_map[kv.first]);
+        for(size_t i = 0; i < config->plot_variables.size(); i++){
+          double true_data_i = dataman->interactions[index].variables[i];
+          TString key = config->plot_variables[i];
+          if(val_map.find(key) != val_map.end()){
+            if(is_true){ 
+              histman->histos_1D[key]->systematics->detector->xsecuni[ns]->generated->Fill(true_data_i);
+              if(val_map[key] != -99999){
+                histman->histos_1D[key]->systematics->detector->xsecuni[ns]->migration->Fill(true_data_i, val_map[key]);
+              }
+            }
+            if(sel){
+              if(is_true) histman->histos_1D[key]->systematics->detector->xsecuni[ns]->selected->Fill(true_data_i);
+              else histman->histos_1D[key]->systematics->detector->xsecuni[ns]->background->Fill(val_map[key]);
+            }
           }
+
+          // 2D histograms
+          for(size_t j = 0; j < config->plot_variables.size(); j++){
+            if(i==j) continue;
+            double true_data_j = dataman->interactions[index].variables[j];
+            TString key2 = config->plot_variables[j];
+            std::pair<TString,TString> k2D = std::make_pair(key, key2);
+            if(val_map.find(key) != val_map.end() && val_map.find(key2) != val_map.end()){
+              if(is_true){ 
+                histman->histos_2D[k2D]->systematics->detector->xsecuni[ns]->generated->Fill(true_data_i, true_data_j);
+                if(val_map[key] != -99999 && val_map[key2] != -99999){
+                  int true_bin = histman->histos_2D[k2D]->total_hist->FindBin(true_data_i, true_data_j);
+                  int reco_bin = histman->histos_2D[k2D]->total_hist->FindBin(val_map[key], val_map[key2]);
+                  histman->histos_2D[k2D]->systematics->detector->xsecuni[ns]->migration->Fill(true_bin-0.5, true_bin-0.5);
+                }
+              }
+              if(sel){
+                if(is_true) histman->histos_2D[k2D]->systematics->detector->xsecuni[ns]->selected->Fill(true_data_i, true_data_j);
+                else histman->histos_2D[k2D]->systematics->detector->xsecuni[ns]->background->Fill(val_map[key], val_map[key2]);
+              }
+            }
+          }
+
         }
 
-        // 2D histograms
-        for(auto& kv : histman->histos_2D){
-          if(val_map.find(kv.first.first) != val_map.end() && val_map.find(kv.first.second) != val_map.end()){
-            kv.second->systematics->detector->universes[ns]->Fill(val_map[kv.first.first], val_map[kv.first.second]);
-          }
-        }
       }
+      index++;
+
     }
 
-    // Apply scale factors
-    histman->ScaleUniverses("detector");
+    histman->CalculateXSec("detector");
     // Calculate means and covariances
     histman->CalculateSyst("detector");
 
@@ -345,12 +385,13 @@ class SystCalculator
 
     // Create empty histograms for universes
     histman->CreateUniverses("genie", nsims);
+    histman->CreateXSecUni("genie", nsims);
+
     histman->CreateUniverses("flux", nsims);
+    histman->CreateXSecUni("flux", nsims);
 
     // Read in data from file
-    TFile data_file(config->input_file[file_i], "READ");
-
-    std::cout<<"Creating the tree reader\n";
+    TFile data_file(config->input_file[file_i]);
 
     //Read in TTree
     TTreeReader tree_reader("XSecTree/weight", &data_file);
@@ -359,59 +400,36 @@ class SystCalculator
     
     // Loop over tree
     int index = 0;
-    int data_i = 0;
-    std::cout<<"This takes...\n";
+    std::cout<<"Reweighting systematics\n";
     while (tree_reader.Next()) {
-      // Determine if interaction was selected
-      if(!dataman->data_used[index]){ index++; continue; }
+      if(!dataman->interactions[index].in_fv){ index++; continue; }
+
       // Loop over the number of universes
       for(int ns = 0; ns < nsims; ns++){
-        // Total
+
+        // Genie reweighting
         if(genie_weight[ns] > 0 && genie_weight[ns] < 100 && calc_genie){
-          histman->total->systematics->genie->universes[ns]->Fill(1., genie_weight[ns]);
+          histman->FillXSecUni("genie", index, ns, genie_weight[ns]);
         }
+      
+        // Flux reweighting
         if(flux_weight[ns] > 0 && flux_weight[ns] < 100 && calc_flux){
-          histman->total->systematics->flux->universes[ns]->Fill(1., flux_weight[ns]);
+          histman->FillXSecUni("flux", index, ns, flux_weight[ns]);
         }
-        // 1D histograms
-        for(size_t i = 0; i < config->plot_variables.size(); i++){
-          TString key = config->plot_variables[i];
-          if(genie_weight[ns] > 0 && genie_weight[ns] < 100 && calc_genie){
-            histman->histos_1D[key]->systematics->genie->universes[ns]->Fill(dataman->total_data[data_i][i], genie_weight[ns]);
-          }
-          if(flux_weight[ns] > 0 && flux_weight[ns] < 100 && calc_flux){
-            histman->histos_1D[key]->systematics->flux->universes[ns]->Fill(dataman->total_data[data_i][i], flux_weight[ns]);
-          }
-          // 2D histograms
-          for(size_t j = 0; j < config->plot_variables.size(); j++){
-            if(i==j) continue;
-            std::pair<TString, TString> key2D = std::make_pair(key, config->plot_variables[j]);
-            if(genie_weight[ns] > 0 && genie_weight[ns] < 100 && calc_genie){
-              histman->histos_2D[key2D]->systematics->genie->universes[ns]->Fill(dataman->total_data[data_i][i], 
-                                                                                 dataman->total_data[data_i][j], 
-                                                                                 genie_weight[ns]);
-            }
-            if(flux_weight[ns] > 0 && flux_weight[ns] < 100 && calc_flux){
-              histman->histos_2D[key2D]->systematics->flux->universes[ns]->Fill(dataman->total_data[data_i][i], 
-                                                                                dataman->total_data[data_i][j], 
-                                                                                flux_weight[ns]);
-            }
-          }
-        }
+        
       }
       index++;
-      data_i++;
     }
-    std::cout<<"... Aaages\n";
-
+    
     // Scale universes
     if(calc_genie){
-      histman->ScaleUniverses("genie");
+      histman->CalculateXSec("genie");
       histman->CalculateSyst("genie");
     }
+    
     // Calculate means and covariances
     if(calc_flux){
-      histman->ScaleUniverses("flux");
+      histman->CalculateXSec("flux");
       histman->CalculateSyst("flux");
     }
 

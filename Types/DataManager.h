@@ -12,12 +12,12 @@ class DataManager
 
   Configuration *config; // Global configurations
 
-  size_t file_i; // Input file index
+  size_t file_i;         // Input file index
 
-  std::vector<Interaction> interactions; // Structure holding info about each interaction
+  std::vector<Interaction> interactions;                              // Structure holding info about each interaction
   std::map<std::string, std::vector<std::vector<double>>> stack_data; // Unbinned plotting variables by stacked hist type
-  std::vector<std::vector<double>> total_data; // Unbinned plotting variables
-  std::vector<bool> data_used; // Flag for if data is selected
+  std::vector<std::vector<double>> total_data;                        // Unbinned plotting variables
+  std::vector<bool> data_used;                                        // Flag for if data is selected
 
   // Constructor
   DataManager(Configuration *c, size_t f)
@@ -132,9 +132,11 @@ class DataManager
                                       *true_particles_contained, *true_n_pr, *true_n_pipm, *true_n_pi0, *true_int_type, true);
 
       // Check true vertex inside fiducial volume
+      bool in_fv = true;
       if(!sel.InFiducial(*vtx_x, *vtx_y, *vtx_z)){
         selected = false;
         true_selected = false;
+        in_fv = false;
       }
 
       std::vector<double> variables;
@@ -271,7 +273,7 @@ class DataManager
         true_selected = false;
       }
       
-      Interaction interaction(selected, true_selected, fsi_string, int_string, nu_string, variables, true_variables);
+      Interaction interaction(selected, true_selected, in_fv, fsi_string, int_string, nu_string, variables, true_variables);
       interactions.push_back(interaction);
       
     }

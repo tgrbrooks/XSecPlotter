@@ -33,7 +33,7 @@ void SetStyle(){
   gStyle->SetTitleX(0.0);
   gStyle->SetTitleY(1.0); 
   gStyle->SetTitleW(1.0);
-  gStyle->SetTitleH(0.075);
+  gStyle->SetTitleH(0.065);
   // Fonts
   gStyle->SetTitleFont(font, "title");
   gStyle->SetTitleFont(font, "x");

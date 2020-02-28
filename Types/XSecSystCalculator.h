@@ -49,7 +49,7 @@ class XSecSystCalculator
     // Calculate the total systematics for each histogram
     // Total
     histman->total->systematics->GetTotal();
-    histman->total->PrintXSecSummary();
+    histman->total->PrintXSecSummary(1);
     // 2D histograms
     for(auto& kv : histman->histos_1D){
       kv.second->systematics->GetTotal();
@@ -85,7 +85,7 @@ class XSecSystCalculator
 
     // 2D systematics
     for(auto& kv2D : histman->histos_2D){
-      for(int n = 1; n <= kv2D.second->total_hist->GetNumberOfBins(); n++){
+      for(int n = 1; n <= kv2D.second->xsec_hist->GetNumberOfBins(); n++){
         //Setting bin error for TH2Poly makes mad things happen! Just use another one for errors
         kv2D.second->systematics->constant->mean_syst->SetBinContent(n, kv2D.second->xsec_hist->GetBinContent(n));
         kv2D.second->systematics->constant->std_syst->SetBinContent(n, err*kv2D.second->xsec_hist->GetBinContent(n));
@@ -257,6 +257,7 @@ class XSecSystCalculator
         }
         double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
         double percent_tot_err = tot_err/kv2D.second->total_hist->GetBinContent(i);
+        if(percent_tot_err == 0) percent_tot_err = 0.01;
         kv2D.second->systematics->background->mean_syst->SetBinContent(i, kv2D.second->xsec_hist->GetBinContent(i));
         kv2D.second->systematics->background->std_syst->SetBinContent(i, percent_tot_err*kv2D.second->xsec_hist->GetBinContent(i));
       }
@@ -325,7 +326,7 @@ class XSecSystCalculator
 
         // 1D histograms
         for(size_t i = 0; i < config->plot_variables.size(); i++){
-          double true_data_i = dataman->interactions[index].variables[i];
+          double true_data_i = dataman->interactions[index].true_variables[i];
           TString key = config->plot_variables[i];
           if(val_map.find(key) != val_map.end()){
             if(is_true){ 
@@ -343,7 +344,7 @@ class XSecSystCalculator
           // 2D histograms
           for(size_t j = 0; j < config->plot_variables.size(); j++){
             if(i==j) continue;
-            double true_data_j = dataman->interactions[index].variables[j];
+            double true_data_j = dataman->interactions[index].true_variables[j];
             TString key2 = config->plot_variables[j];
             std::pair<TString,TString> k2D = std::make_pair(key, key2);
             if(val_map.find(key) != val_map.end() && val_map.find(key2) != val_map.end()){
@@ -352,7 +353,7 @@ class XSecSystCalculator
                 if(val_map[key] != -99999 && val_map[key2] != -99999){
                   int true_bin = histman->histos_2D[k2D]->total_hist->FindBin(true_data_i, true_data_j);
                   int reco_bin = histman->histos_2D[k2D]->total_hist->FindBin(val_map[key], val_map[key2]);
-                  histman->histos_2D[k2D]->systematics->detector->xsecuni[ns]->migration->Fill(true_bin-0.5, true_bin-0.5);
+                  histman->histos_2D[k2D]->systematics->detector->xsecuni[ns]->migration->Fill(true_bin-0.5, reco_bin-0.5);
                 }
               }
               if(sel){

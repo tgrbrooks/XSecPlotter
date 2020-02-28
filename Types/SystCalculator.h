@@ -49,7 +49,7 @@ class SystCalculator
     // Calculate the total systematics for each histogram
     // Total
     histman->total->systematics->GetTotal();
-    histman->total->PrintSummary();
+    histman->total->PrintSummary(1);
     // 2D histograms
     for(auto& kv : histman->histos_1D){
       kv.second->systematics->GetTotal();

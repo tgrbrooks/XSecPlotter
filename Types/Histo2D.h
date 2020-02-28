@@ -77,9 +77,19 @@ class Histo2D
     TH1D* bkg = SlicePoly(bkg_hist, i, slice_name+"_bkg", ybins, xbins);
     TH1D* xsec = SlicePoly(xsec_hist, i, slice_name+"_xsec", ybins, xbins);
     xsec->SetLineWidth(3);
+    xsec->SetLineColor(46);
+    TH1D* errors = (TH1D*) total->Clone();
+    errors->Add(bkg, -1.);
+    for(size_t i = 0; i <= errors->GetNbinsX()+1; i++){
+      xsec->SetBinError(i, xsec->GetBinContent(i)*errors->GetBinError(i)/errors->GetBinContent(i));
+    }
+    delete errors;
 
     // Get the relevant stacked histogram
     THStack* stack = stacked_hist[i];
+    TH1D* hist = (TH1D*)stack->GetHists()->First();
+    total->SetLineColor(hist->GetLineColor());
+    total->SetLineStyle(hist->GetLineStyle());
 
     // Slice the efficiency and purity
     std::pair<TH1D*, TH1D*> eff = std::make_pair(SlicePoly(efficiency.first, i, slice_name+"_en", ybins, xbins)

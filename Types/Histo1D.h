@@ -163,15 +163,15 @@ class Histo1D
   }
 
   // Print error summary for total data
-  void PrintSummary(){
-    double total = total_hist->GetBinContent(1);
-    double stat_e = total_hist->GetBinError(1);
-    double genie_e = systematics->genie->mean_syst->GetBinError(1);
-    double flux_e = systematics->flux->mean_syst->GetBinError(1);
-    double det_e = systematics->detector->mean_syst->GetBinError(1);
-    double bkg_e = systematics->background->mean_syst->GetBinError(1);
-    double const_e = systematics->constant->mean_syst->GetBinError(1);
-    double syst_e = systematics->total->mean_syst->GetBinError(1);
+  void PrintSummary(int bin){
+    double total = total_hist->GetBinContent(bin);
+    double stat_e = total_hist->GetBinError(bin);
+    double genie_e = systematics->genie->mean_syst->GetBinError(bin);
+    double flux_e = systematics->flux->mean_syst->GetBinError(bin);
+    double det_e = systematics->detector->mean_syst->GetBinError(bin);
+    double bkg_e = systematics->background->mean_syst->GetBinError(bin);
+    double const_e = systematics->constant->mean_syst->GetBinError(bin);
+    double syst_e = systematics->total->mean_syst->GetBinError(bin);
     double tot_e = std::sqrt(pow(syst_e, 2)+pow(stat_e, 2));
     std::cout<<"Total rate = "<<total<<"\n"
              <<"-------------------------------------------------\n"
@@ -190,15 +190,15 @@ class Histo1D
   }
 
   // Print error summary for total data
-  void PrintXSecSummary(){
-    double total = xsec_hist->GetBinContent(1);
-    double stat_e = xsec_hist->GetBinError(1);
-    double genie_e = systematics->genie->mean_syst->GetBinError(1);
-    double flux_e = systematics->flux->mean_syst->GetBinError(1);
-    double det_e = systematics->detector->mean_syst->GetBinError(1);
-    double bkg_e = systematics->background->mean_syst->GetBinError(1);
-    double const_e = systematics->constant->mean_syst->GetBinError(1);
-    double syst_e = systematics->total->mean_syst->GetBinError(1);
+  void PrintXSecSummary(int bin){
+    double total = xsec_hist->GetBinContent(bin);
+    double stat_e = xsec_hist->GetBinError(bin);
+    double genie_e = systematics->genie->mean_syst->GetBinError(bin);
+    double flux_e = systematics->flux->mean_syst->GetBinError(bin);
+    double det_e = systematics->detector->mean_syst->GetBinError(bin);
+    double bkg_e = systematics->background->mean_syst->GetBinError(bin);
+    double const_e = systematics->constant->mean_syst->GetBinError(bin);
+    double syst_e = systematics->total->mean_syst->GetBinError(bin);
     double tot_e = std::sqrt(pow(syst_e, 2)+pow(stat_e, 2));
     std::cout<<"Total cross section = "<<total<<"\n"
              <<"-------------------------------------------------\n"

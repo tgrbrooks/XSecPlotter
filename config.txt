@@ -95,7 +95,7 @@ Stage: reco
 PlotVariable: cos_lep_theta, lep_mom
 
 // Save the plots for each variable
-PlotSlices: true
+PlotSlices: false
 
 // Scale to a certain POT (-1 for no scaling) (6.6e20 is nominal)
 PotScale: 6.6e20
@@ -116,13 +116,13 @@ MinValue: -1, 0
 MaxValue: 1, 2
 
 // Number of bins (-1 for automatic)
-NumBins: 5, 5
+NumBins: 20, 20
 
 // Bin edges (separate edges with , and plot variables in [] brackets)
 BinEdges: [-1], [-1]
 
 // Maximum percentage error per bin (0->1, -1 for none) (merges bins)
-MaxError: -1
+MaxError: 0.01
 
 // Plot cross-section (true) or rate (false)
 PlotXSec: true
@@ -134,7 +134,7 @@ PlotFilled: false
 //                         Choose plot options
 //------------------------------------------------------------------------
 // Show selection information (true)
-ShowInfo: false
+ShowInfo: true
 
 // Show error band at bottom of plot (true)
 ShowErrorBand: true
@@ -143,10 +143,10 @@ ShowErrorBand: true
 ShowStatError: true
 
 // Show systematic error (true)
-ShowSystError: false
+ShowSystError: true
 
 // List of systematics to include (genie, flux, detector, background, constant)
-Systematics: genie, flux, detector, background, constant
+Systematics: genie, flux
 
 // Value of constant percentage systematic error (0->1)
 ConstantSyst: 0.027
@@ -164,4 +164,4 @@ PlotUniverses: true
 PlotEffPur: false
 
 // Produce response matrix (true)
-PlotResponse: true
+PlotResponse: false

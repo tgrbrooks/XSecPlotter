@@ -106,7 +106,7 @@ void XSecPlotter(){
   // Make all of the histograms for both files
   std::cout<<"Creating all of the histograms...\n";
   std::vector<HistManager*> histmans;
-  for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
+  for(size_t file_i = 0; file_i < datamans.size(); file_i++){
     // Create a cross section calculator for each file
     XSecCalculator *xsec = new XSecCalculator(config, fluxman, file_i);
     HistManager *histman = new HistManager(config, titles, datamans[file_i], binman, xsec, file_i);
@@ -121,7 +121,7 @@ void XSecPlotter(){
   // Calculate systematics and associate to histograms if requested
   if(config->show_syst_error){
     std::cout<<"Calculating the systematics...\n";
-    for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
+    for(size_t file_i = 0; file_i < histmans.size(); file_i++){
       // Systematics are handeled differently between cross section and rate
       if(config->plot_xsec){
         XSecSystCalculator(config, histmans[file_i], datamans[file_i], file_i);
@@ -164,7 +164,7 @@ void XSecPlotter(){
     std::vector<Histo1D*> histos_1D;
 
     // Fill a vector of 1D histograms with each input file
-    for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
+    for(size_t file_i = 0; file_i < histmans.size(); file_i++){
       histos_1D.push_back(histmans[file_i]->GetHisto1D(i));
     }
 
@@ -187,7 +187,6 @@ void XSecPlotter(){
 
     // Plot correlation, covariance, and universes for first file if selected
     if(config->plot_correlation && config->show_syst_error){
-      std::cout<<"Plotting matrices\n";
       plotter->PlotAllSysts(histmans[0]->GetHisto1D(i));
     }
 
@@ -218,7 +217,7 @@ void XSecPlotter(){
 
     // Fill a vector of 2D histograms for each file
     std::vector<Histo2D*> histos_2D;
-    for(size_t file_i = 0; file_i < config->input_file.size(); file_i++){
+    for(size_t file_i = 0; file_i < histmans.size(); file_i++){
       histos_2D.push_back(histmans[file_i]->GetHisto2D(0, 1));
     }
 

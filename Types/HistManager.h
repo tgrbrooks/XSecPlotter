@@ -185,7 +185,7 @@ class HistManager
     }
     for(auto& kv : histos_2D){
       if(config->plot_xsec){
-        kv.second->systematics->GetSyst(syst)->Calculate(kv.second->total_hist);
+        kv.second->systematics->GetSyst(syst)->Calculate(kv.second->xsec_hist);
       }
       else{
         kv.second->systematics->GetSyst(syst)->Calculate(kv.second->total_hist);
@@ -531,12 +531,16 @@ class HistManager
     histos_1D[key]->xsec_hist = xsec->ToXSec(histos_1D[key]);
 
     // Do a little formatting
-    histos_1D[key]->xsec_hist->SetFillColor(config->cols[2*file_i]);
-    histos_1D[key]->xsec_hist->SetLineColor(config->cols[2*file_i]);
+    histos_1D[key]->xsec_hist->SetFillColor(config->cols[0]);
+    histos_1D[key]->xsec_hist->SetLineColor(config->cols[0]);
+    if(file_i != 0){
+      histos_1D[key]->xsec_hist->SetFillStyle(config->fsty[file_i]);
+      histos_1D[key]->xsec_hist->SetLineStyle(config->lsty[file_i]);
+    }
     if(!config->plot_filled){
       histos_1D[key]->xsec_hist->SetFillColor(0);
       histos_1D[key]->xsec_hist->SetLineWidth(3);
-    }
+    } 
 
     // Set the total systematic histogram
     for(size_t i = 0; i <= histos_1D[key]->xsec_hist->GetNbinsX()+1; i++){
@@ -550,8 +554,12 @@ class HistManager
     histos_2D[key]->xsec_hist = xsec->ToXSec(histos_2D[key]);
 
     // Do a little formatting
-    histos_2D[key]->xsec_hist->SetFillColor(config->cols[2*file_i]);
-    histos_2D[key]->xsec_hist->SetLineColor(config->cols[2*file_i]);
+    histos_2D[key]->xsec_hist->SetFillColor(config->cols[0]);
+    histos_2D[key]->xsec_hist->SetLineColor(config->cols[0]);
+    if(file_i != 0){
+      histos_2D[key]->xsec_hist->SetFillStyle(config->fsty[file_i]);
+      histos_2D[key]->xsec_hist->SetLineStyle(config->lsty[file_i]);
+    }
     if(!config->plot_filled){
       histos_2D[key]->xsec_hist->SetFillColor(0);
       histos_2D[key]->xsec_hist->SetLineWidth(3);
@@ -599,7 +607,11 @@ class HistManager
     double edges_array[bin_edges.size()];
     std::copy(bin_edges.begin(), bin_edges.end(), edges_array);
     THStack *hstack = new THStack(tune+config->plot_variables[var_i]+"_stack", "");
-    TLegend *legend = new TLegend(0.14, 0., 0.94, 0.06);
+    double x1 = 0.14; double x2 = 0.94; double y1 = 0.; double y2 = 0.06;
+    if(!config->show_error_band){
+      x1 = 0.24; x2 = 0.96; y1 = 0.85; y2 = 0.91;
+    }
+    TLegend *legend = new TLegend(x1, y1, x2, y2);
 
     int index = 0;
     for(auto const& dat: dataman->stack_data){
@@ -608,10 +620,13 @@ class HistManager
         hist->Fill(dat.second[n][var_i]);
       }
       hist->Scale(config->pot_scale_fac[file_i]);
-      // If plotting cross section convert from rate
       hist->Scale(1, "width");
-      hist->SetFillColor(config->cols[index+2*file_i]);
-      hist->SetLineColor(config->cols[index+2*file_i]);
+      hist->SetFillColor(config->cols[index]);
+      hist->SetLineColor(config->cols[index]);
+      if(config->input_file.size() > 1){
+        hist->SetFillStyle(config->fsty[file_i]);
+        hist->SetLineStyle(config->lsty[file_i]);
+      }
       if(!config->plot_filled){
         hist->SetFillColor(0);
         hist->SetLineWidth(3);
@@ -643,7 +658,8 @@ class HistManager
     }
     // If plotting cross section convert from rate
     total_hist->Scale(1, "width");
-    total_hist->SetLineColor(config->cols[0+2*file_i]);
+    total_hist->SetLineColor(config->cols[0]);
+    if(config->plot_variables.size() > 1) total_hist->SetLineStyle(config->lsty[file_i]);
     return total_hist;
   }
 
@@ -672,7 +688,11 @@ class HistManager
       THStack *hstack = new THStack(name, title);
       hstacks.push_back(hstack);
     }
-    TLegend *legend = new TLegend(0.14, 0., 0.94, 0.06);
+    double x1 = 0.14; double x2 = 0.94; double y1 = 0.; double y2 = 0.06;
+    if(!config->show_error_band){
+      x1 = 0.24; x2 = 0.96; y1 = 0.85; y2 = 0.91;
+    }
+    TLegend *legend = new TLegend(x1, y1, x2, y2);
 
     for(size_t bin_j = 0; bin_j < ybin_edges.size()-1; bin_j++){
       int index = 0;
@@ -692,11 +712,11 @@ class HistManager
         // If plotting cross section convert from rate
         double width = (ybin_edges[bin_j+1] - ybin_edges[bin_j]);
         hist->Scale(1/width, "width");
-        hist->SetFillColor(config->cols[index]+file_i);
-        hist->SetLineColor(config->cols[index]+file_i);
-        if(file_i != 0){
-          hist->SetFillStyle(3444);
-          hist->SetLineStyle(7);
+        hist->SetFillColor(config->cols[index]);
+        hist->SetLineColor(config->cols[index]);
+        if(config->input_file.size() > 1){
+          hist->SetFillStyle(config->fsty[file_i]);
+          hist->SetLineStyle(config->lsty[file_i]);
         }
         if(!config->plot_filled){
           hist->SetFillColor(0);
@@ -745,7 +765,8 @@ class HistManager
     }
     // If plotting cross section convert from rate
     total_hist->Scale(1, "width");
-    total_hist->SetLineColor(config->cols[0]+file_i);
+    total_hist->SetLineColor(config->cols[0]);
+    if(config->plot_variables.size() > 1) total_hist->SetLineStyle(config->lsty[file_i]);
     return total_hist;
   }
 

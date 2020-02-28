@@ -34,8 +34,10 @@ class ChiSquare
       }
     }
 
+    cov *= 1./cov[0][0];
     // Invert the covariance matrix
     TMatrix cov_inv = cov.Invert();
+    cov_inv *= cov[0][0];
 
     // Loop over all combinations of bins
     double chi2 = 0.;
@@ -57,7 +59,7 @@ class ChiSquare
     return std::make_pair(chi2, nbins-1);
   }
 
-  // Calculate chi2 between fake data and MC for 2D distributions
+  // Calculate chi2 between fake data and MC for 2D distributions TODO xsec stat errors
   std::pair<double, int> Calculate(TH2Poly* data, Histo2D* mc, bool xsec=false){
 
     int nbins = mc->xsec_hist->GetNumberOfBins();
@@ -86,10 +88,12 @@ class ChiSquare
       }
     }
     //cov.Print();
+    cov *= 1./cov[0][0];
     std::cout<<"Det = "<<cov.Determinant()<<"\n";
 
     // Invert the covariance matrix
     TMatrix cov_inv = cov.Invert();
+    cov_inv += cov[0][0];
     
     // Loop over all combinations of bins
     double chi2 = 0.;

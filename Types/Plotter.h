@@ -314,8 +314,9 @@ class Plotter
 
     if(!bins){
       hist->Draw("colz");
-      TPaletteAxis *palette = (TPaletteAxis*)hist->GetListOfFunctions()->FindObject("palette");
-      palette->SetMaxDigits(3);
+      hist->GetZaxis()->SetMaxDigits(3);
+      /*TPaletteAxis *palette = (TPaletteAxis*)hist->GetListOfFunctions()->FindObject("palette");
+      palette->SetMaxDigits(3);*/
       canvas->Modified();
       canvas->Update();
     }
@@ -351,8 +352,9 @@ class Plotter
 
     hist->Draw("colz");
 
-    TPaletteAxis *palette = (TPaletteAxis*)hist->GetListOfFunctions()->FindObject("palette");
-    palette->SetMaxDigits(3);
+    /*TPaletteAxis *palette = (TPaletteAxis*)hist->GetListOfFunctions()->FindObject("palette");
+    palette->SetMaxDigits(3);*/
+    hist->GetZaxis()->SetMaxDigits(3);
     canvas->Modified();
     canvas->Update();
 

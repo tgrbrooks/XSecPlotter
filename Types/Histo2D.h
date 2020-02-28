@@ -80,7 +80,7 @@ class Histo2D
     xsec->SetLineColor(46);
     TH1D* errors = (TH1D*) total->Clone();
     errors->Add(bkg, -1.);
-    for(size_t i = 0; i <= errors->GetNbinsX()+1; i++){
+    for(int i = 0; i <= errors->GetNbinsX()+1; i++){
       xsec->SetBinError(i, xsec->GetBinContent(i)*errors->GetBinError(i)/errors->GetBinContent(i));
     }
     delete errors;

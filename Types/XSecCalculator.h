@@ -55,13 +55,13 @@ class XSecCalculator
     TH2Poly* xsec_hist = (TH2Poly*)histo->total_hist->Clone(TString(histo->total_hist->GetName())+"_xsec");
 
     // Subtract background
-    for(size_t i = 0; i <= xsec_hist->GetNumberOfBins()+1; i++){
+    for(int i = 0; i <= xsec_hist->GetNumberOfBins()+1; i++){
       xsec_hist->SetBinContent(i, xsec_hist->GetBinContent(i) - histo->bkg_hist->GetBinContent(i));
     }
 
     // Correct efficiency with response
     TH2Poly* eff = GetEfficiency(histo->efficiency, histo->response);
-    for(size_t i = 0; i <= xsec_hist->GetNumberOfBins()+1; i++){
+    for(int i = 0; i <= xsec_hist->GetNumberOfBins()+1; i++){
       xsec_hist->SetBinContent(i, xsec_hist->GetBinContent(i) / eff->GetBinContent(i));
     }
 
@@ -116,14 +116,14 @@ class XSecCalculator
     // Clone the total rate from "data"
     TH2Poly* xsec_hist = (TH2Poly*)rate->Clone(Form(TString(rate->GetName())+syst+"_unitemp%i", uni));
     // Subtract background
-    for(size_t i = 0; i <= xsec_hist->GetNumberOfBins()+1; i++){
+    for(int i = 0; i <= xsec_hist->GetNumberOfBins()+1; i++){
       xsec_hist->SetBinContent(i, xsec_hist->GetBinContent(i) - xsecuni->background->GetBinContent(i));
     }
 
     // Correct efficiency with response
     std::pair<TH2Poly*, TH2Poly*> efficiency = std::make_pair(xsecuni->selected, xsecuni->generated);
     TH2Poly* eff = GetEfficiency(efficiency, xsecuni->Response());
-    for(size_t i = 0; i <= xsec_hist->GetNumberOfBins()+1; i++){
+    for(int i = 0; i <= xsec_hist->GetNumberOfBins()+1; i++){
       xsec_hist->SetBinContent(i, xsec_hist->GetBinContent(i) / eff->GetBinContent(i));
     }
 
@@ -146,10 +146,10 @@ class XSecCalculator
     reco_hist->Reset();
 
     // Loop over the bins of the reco histogram
-    for(size_t bin_i = 1; bin_i <= reco_hist->GetNbinsX(); bin_i++){
+    for(int bin_i = 1; bin_i <= reco_hist->GetNbinsX(); bin_i++){
       double content_i = 0;
       // Loop over bins of the true histogram and apply the response matrix
-      for(size_t bin_j = 1; bin_j <= hist->GetNbinsX()+1; bin_j++){
+      for(int bin_j = 1; bin_j <= hist->GetNbinsX()+1; bin_j++){
         content_i += response->GetBinContent(bin_j, bin_i) * hist->GetBinContent(bin_j);
       }   
       reco_hist->SetBinContent(bin_i, content_i);
@@ -186,10 +186,10 @@ class XSecCalculator
     reco_hist->ClearBinContents();
 
     // Loop over the bins of the reco histogram
-    for(size_t bin_i = 1; bin_i <= reco_hist->GetNumberOfBins(); bin_i++){
+    for(int bin_i = 1; bin_i <= reco_hist->GetNumberOfBins(); bin_i++){
       double content_i = 0;
       // Loop over bins of the true histogram and apply the response matrix
-      for(size_t bin_j = 1; bin_j <= hist->GetNumberOfBins()+1; bin_j++){
+      for(int bin_j = 1; bin_j <= hist->GetNumberOfBins()+1; bin_j++){
         content_i += response->GetBinContent(bin_j, bin_i) * hist->GetBinContent(bin_j);
       }   
       reco_hist->SetBinContent(bin_i, content_i);
@@ -202,7 +202,7 @@ class XSecCalculator
 
     if(eff.first->GetNbinsX() <= 1){
       TH2Poly* efficiency = (TH2Poly*)eff.first->Clone();
-      for(size_t i = 0; i <= efficiency->GetNumberOfBins()+1; i++){
+      for(int i = 0; i <= efficiency->GetNumberOfBins()+1; i++){
         efficiency->SetBinContent(i, efficiency->GetBinContent(i) / eff.first->GetBinContent(i));
       }
       return efficiency;
@@ -211,7 +211,7 @@ class XSecCalculator
     TH2Poly *selected_resp = ApplyResponse(eff.first, response);
     TH2Poly *true_resp = ApplyResponse(eff.second, response);
 
-    for(size_t i = 0; i <= selected_resp->GetNumberOfBins()+1; i++){
+    for(int i = 0; i <= selected_resp->GetNumberOfBins()+1; i++){
       selected_resp->SetBinContent(i, selected_resp->GetBinContent(i) / selected_resp->GetBinContent(i));
     }
 

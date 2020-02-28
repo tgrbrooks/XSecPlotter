@@ -290,7 +290,7 @@ class HistManager
   // Calculate the cross section from universe variations for all histograms
   void CalculateXSec(TString syst){
     int nuni = total->systematics->GetSyst(syst)->xsecuni.size();
-    for(size_t i = 0; i < nuni; i++){
+    for(int i = 0; i < nuni; i++){
       TH1D *xsec_total_temp = xsec->ToXSec(total->systematics->GetSyst(syst)->xsecuni[i], total->total_hist, syst, i);
       total->systematics->GetSyst(syst)->universes[i]->Add(xsec_total_temp);
       for(auto& kv : histos_1D){
@@ -299,7 +299,7 @@ class HistManager
       }
       for(auto& kv : histos_2D){
         TH2Poly *xsec_2D_temp = xsec->ToXSec(kv.second->systematics->GetSyst(syst)->xsecuni[i], kv.second->total_hist, syst, i);
-        for(size_t j = 0; j <= xsec_2D_temp->GetNumberOfBins()+1; j++){
+        for(int j = 0; j <= xsec_2D_temp->GetNumberOfBins()+1; j++){
           kv.second->systematics->GetSyst(syst)->universes[i]->SetBinContent(j, xsec_2D_temp->GetBinContent(j)); 
         }
       }
@@ -520,7 +520,7 @@ class HistManager
   void SetXSec(){
     total->xsec_hist = xsec->ToXSec(total);
     // Set the total systematic histogram
-    for(size_t i = 0; i <= total->xsec_hist->GetNbinsX()+1; i++){
+    for(int i = 0; i <= total->xsec_hist->GetNbinsX()+1; i++){
       total->systematics->GetSyst("total")->mean_syst->SetBinContent(i, total->xsec_hist->GetBinContent(i));
     }
   }
@@ -543,7 +543,7 @@ class HistManager
     } 
 
     // Set the total systematic histogram
-    for(size_t i = 0; i <= histos_1D[key]->xsec_hist->GetNbinsX()+1; i++){
+    for(int i = 0; i <= histos_1D[key]->xsec_hist->GetNbinsX()+1; i++){
       histos_1D[key]->systematics->GetSyst("total")->mean_syst->SetBinContent(i, histos_1D[key]->xsec_hist->GetBinContent(i));
     }
   }
@@ -566,7 +566,7 @@ class HistManager
     }
 
     // Set the total systematic histogram
-    for(size_t i = 0; i <= histos_2D[key]->xsec_hist->GetNumberOfBins()+1; i++){
+    for(int i = 0; i <= histos_2D[key]->xsec_hist->GetNumberOfBins()+1; i++){
       histos_2D[key]->systematics->GetSyst("total")->mean_syst->SetBinContent(i, histos_2D[key]->xsec_hist->GetBinContent(i));
     }
   }

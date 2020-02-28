@@ -27,6 +27,7 @@
 #include <TMath.h>
 #include <TGraphAsymmErrors.h>
 #include <TCanvas.h>
+#include <TPaletteAxis.h>
 #include <sstream>
 #include <fstream>
 #include <math.h>

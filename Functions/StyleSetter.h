@@ -16,7 +16,7 @@ void SetStyle(){
   Double_t line_width = 3.;
   Double_t label_offset = 0.01;
 
-  TGaxis::SetMaxDigits(3);
+  //TGaxis::SetMaxDigits(3);
   gStyle->SetOptStat(0);
   gStyle->SetPalette(55);
   gStyle->SetMarkerStyle(8);

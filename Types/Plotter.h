@@ -537,6 +537,7 @@ class Plotter
       hist->xsec_hist->GetYaxis()->SetNdivisions(110);
       hist->xsec_hist->GetYaxis()->SetTickLength(0.015);
       hist->xsec_hist->GetYaxis()->SetRangeUser(0, max*1.1);
+      hist->xsec_hist->GetYaxis()->SetMaxDigits(3);
     }
 
     else{
@@ -560,6 +561,7 @@ class Plotter
       hist->stacked_hist->GetYaxis()->SetNdivisions(110);
       hist->stacked_hist->GetYaxis()->SetTickLength(0.015);
       hist->stacked_hist->SetMaximum(max*1.1);
+      hist->stacked_hist->GetYaxis()->SetMaxDigits(3);
     }
   }
 
@@ -587,6 +589,7 @@ class Plotter
     error_band->GetYaxis()->SetLabelSize(size_ratio * 0.06);
     error_band->GetYaxis()->CenterTitle();
     error_band->GetYaxis()->SetTickLength(0.015);
+    error_band->GetYaxis()->SetMaxDigits(3);
     error_band->SetNdivisions(105, "y");
     error_band->SetTitleOffset(0.32, "y");
     double emax = error_band->GetBinContent(error_band->GetMaximumBin());
@@ -640,6 +643,7 @@ class Plotter
     graph->GetYaxis()->SetTickLength(0.015);
     graph->GetYaxis()->SetTitleSize(1.1 * 0.06);
     graph->GetYaxis()->SetNdivisions(108);
+    graph->GetYaxis()->SetMaxDigits(3);
 
     graph->BayesDivide(select, total);
     graph->Draw("ap");
@@ -794,6 +798,7 @@ class Plotter
     hist->GetYaxis()->SetTitleSize(title_size);   
     hist->GetYaxis()->SetNdivisions(110);
     hist->GetYaxis()->SetRangeUser(0, ymax*1.1);
+    hist->GetYaxis()->SetMaxDigits(3);
     canvas->Modified();
 
     // Text position and content

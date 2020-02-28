@@ -197,6 +197,7 @@ class XSecSystCalculator
       // Add up cosmic and dirt errors
       double tot_err = std::sqrt(std::pow(tot_cos_err, 2.)+std::pow(tot_dirt_err, 2.));
       double percent_tot_err = tot_err/histman->total->total_hist->GetBinContent(n);
+      if(percent_tot_err == 0) percent_tot_err = 0.001;
       // Set the central value and uncertainty
       histman->total->systematics->background->mean_syst->SetBinContent(n, histman->total->xsec_hist->GetBinContent(n));
       histman->total->systematics->background->mean_syst->SetBinError(n, percent_tot_err*histman->total->xsec_hist->GetBinContent(n));
@@ -222,6 +223,7 @@ class XSecSystCalculator
         }
         double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
         double percent_tot_err = tot_err/kv1D.second->total_hist->GetBinContent(n);
+        if(percent_tot_err == 0) percent_tot_err = 0.001;
         kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->xsec_hist->GetBinContent(n));
         kv1D.second->systematics->background->mean_syst->SetBinError(n, percent_tot_err*kv1D.second->xsec_hist->GetBinContent(n));
       }
@@ -257,7 +259,7 @@ class XSecSystCalculator
         }
         double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
         double percent_tot_err = tot_err/kv2D.second->total_hist->GetBinContent(i);
-        if(percent_tot_err == 0) percent_tot_err = 0.01;
+        if(percent_tot_err == 0) percent_tot_err = 0.001;
         kv2D.second->systematics->background->mean_syst->SetBinContent(i, kv2D.second->xsec_hist->GetBinContent(i));
         kv2D.second->systematics->background->std_syst->SetBinContent(i, percent_tot_err*kv2D.second->xsec_hist->GetBinContent(i));
       }

@@ -312,7 +312,13 @@ class Plotter
     hist->GetYaxis()->SetTitleSize(1.1 * 0.06);
     hist->GetYaxis()->SetNdivisions(108);
 
-    if(!bins) hist->Draw("colz");
+    if(!bins){
+      hist->Draw("colz");
+      TPaletteAxis *palette = (TPaletteAxis*)hist->GetListOfFunctions()->FindObject("palette");
+      palette->SetMaxDigits(3);
+      canvas->Modified();
+      canvas->Update();
+    }
     else hist->Draw("text");
 
     TString output_file = config->output_file;
@@ -344,6 +350,11 @@ class Plotter
     hist->GetYaxis()->SetNdivisions(108);
 
     hist->Draw("colz");
+
+    TPaletteAxis *palette = (TPaletteAxis*)hist->GetListOfFunctions()->FindObject("palette");
+    palette->SetMaxDigits(3);
+    canvas->Modified();
+    canvas->Update();
 
     TString output_file = config->output_file;
     output_file.ReplaceAll(".","_"+name+".");

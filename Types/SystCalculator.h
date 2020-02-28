@@ -167,7 +167,7 @@ class SystCalculator
   void GetBackgroundSysts(){
 
     // Background templates should all be scaled to 6.6e20
-    TFile *bkg_file = new TFile("Backgrounds/BackgroundTemplates.root", "READ");
+    TFile *bkg_file = new TFile("Background/BackgroundTemplates.root", "READ");
 
     // Check if file exists
     bool has_file = false;
@@ -192,6 +192,7 @@ class SystCalculator
       }
       // Add up the errors
       double tot_err = std::sqrt(std::pow(tot_cos_err, 2.)+std::pow(tot_dirt_err, 2.));
+      if(tot_err == 0) tot_err = 0.001*histman->total->total_hist->GetBinContent(n);
       histman->total->systematics->background->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
       histman->total->systematics->background->mean_syst->SetBinError(n, tot_err);
     }
@@ -217,6 +218,7 @@ class SystCalculator
         }
         // Add up the errors
         double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
+        if(tot_err == 0) tot_err = 0.001*kv1D.second->total_hist->GetBinContent(n);
         kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
         kv1D.second->systematics->background->mean_syst->SetBinError(n, tot_err);
       }
@@ -255,6 +257,7 @@ class SystCalculator
 
         // Add up errors
         double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
+        if(tot_err == 0) tot_err = 0.001*kv2D.second->total_hist->GetBinContent(i);
         kv2D.second->systematics->background->mean_syst->SetBinContent(i, kv2D.second->total_hist->GetBinContent(i));
         kv2D.second->systematics->background->std_syst->SetBinContent(i, tot_err);
       }

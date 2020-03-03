@@ -14,10 +14,10 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_v2rwt.root
+InputFile: Trees/xsectree_v3rwt.root, Trees/xsectree_v2rwt.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv2_
+TuneName: GENIEv3_, GENIEv2_
 
 // Name of output file (.root for modifiable canvas)
 OutputFile: temp/1Drate.png
@@ -92,7 +92,7 @@ Stage: reco
 //- delta_alphat (transverse kinematic variable) [rad]
 //- delta_phit (transverse kinematic variable) [rad]
 
-PlotVariable: cos_lep_theta, lep_mom
+PlotVariable: lep_mom
 
 // Save the plots for each variable
 PlotSlices: false
@@ -110,19 +110,19 @@ PlotStacked: false
 StackBy: int
 
 // Minimum bin (-1 for min tree value)
-MinValue: -1, 0
+MinValue: 0
 
 // Maximum bin (-1 for max tree value)
-MaxValue: 1, 2
+MaxValue: 2
 
 // Number of bins (-1 for automatic)
-NumBins: 20, 20
+NumBins: 20
 
 // Bin edges (separate edges with , and plot variables in [] brackets)
-BinEdges: [-1], [-1]
+BinEdges: [-1]
 
 // Maximum percentage error per bin (0->1, -1 for none) (merges bins)
-MaxError: 0.01
+MaxError: -1
 
 // Plot cross-section (true) or rate (false)
 PlotXSec: false
@@ -134,7 +134,7 @@ PlotFilled: false
 //                         Choose plot options
 //------------------------------------------------------------------------
 // Show selection information (true)
-ShowInfo: true
+ShowInfo: false
 
 // Show error band at bottom of plot (true)
 ShowErrorBand: true
@@ -146,19 +146,19 @@ ShowStatError: true
 ShowSystError: true
 
 // List of systematics to include (genie, flux, detector, background, constant)
-Systematics: genie, flux, detector, background, constant
+Systematics: background, constant
 
 // Value of constant percentage systematic error (0->1)
-ConstantSyst: 0.027
+ConstantSyst: 0.1
 
 // Show error bars on histograms (true)
 ShowErrorBars: true
 
 // Produce covariance and correlation matrices for systematic errors (true)
-PlotCorrelation: true
+PlotCorrelation: false
 
 // Plot all of the different universes for systematic uncertainties
-PlotUniverses: true
+PlotUniverses: false
 
 // Produce efficiency and purity plots (true)
 PlotEffPur: false

@@ -82,8 +82,8 @@ class Systematics
       for(size_t i = 1; i <= nbins; i++){
         for(size_t j = 1; j <= nbins; j++){
           if(i==j){ 
-            covariance->SetBinContent(i, j, pow(cv_hist->GetBinError(i),2));
-            frac_covariance->SetBinContent(i, j, pow(cv_hist->GetBinError(i),2)/pow(cv_hist->GetBinContent(i),2));
+            covariance->SetBinContent(i, j, pow(mean_syst->GetBinError(i),2));
+            frac_covariance->SetBinContent(i, j, pow(mean_syst->GetBinError(i),2)/pow(cv_hist->GetBinContent(i),2));
             correlation->SetBinContent(i, j, 1.);
           }
         }

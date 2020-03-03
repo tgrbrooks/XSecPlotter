@@ -155,7 +155,7 @@ void XSecPlotter(){
   Plotter *plotter = new Plotter(config, titles);
 
   // Create a chi2 calculater for comparing models
-  ChiSquare chsq;
+  ChiSquare *chsq = new ChiSquare(config);
 
   //-------------------------------------------------------------------------
   //                              1D PLOTS
@@ -200,13 +200,16 @@ void XSecPlotter(){
     // If two input files used calculate chi2 between models
     if(config->input_file.size() == 2){
       std::pair<double, int> chindof; 
+      double pvalue;
       if(config->plot_xsec){
-        chindof = chsq.Calculate(histmans[0]->GetHisto1D(i)->xsec_hist, histmans[1]->GetHisto1D(i), true);
+        chindof = chsq->Calculate(histmans[0]->GetHisto1D(i)->xsec_hist, histmans[1]->GetHisto1D(i));
       }
       else {
-        chindof = chsq.Calculate(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
+        chindof = chsq->Calculate(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
+        pvalue = chsq->PValue(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
       }
       std::cout<<"1D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
+      std::cout<<"P-value = "<<pvalue<<"\n";
     }
   }
 
@@ -247,10 +250,10 @@ void XSecPlotter(){
     if(config->input_file.size() == 2){
       std::pair<double, int> chindof; 
       if(config->plot_xsec){
-        chindof = chsq.Calculate(histmans[0]->GetHisto2D(0, 1)->xsec_hist, histmans[1]->GetHisto2D(0, 1), true);
+        chindof = chsq->Calculate(histmans[0]->GetHisto2D(0, 1)->xsec_hist, histmans[1]->GetHisto2D(0, 1));
       }
       else{
-        chindof = chsq.Calculate(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
+        chindof = chsq->Calculate(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
       }
       std::cout<<"2D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
     }

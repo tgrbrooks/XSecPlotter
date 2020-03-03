@@ -14,13 +14,13 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_v3rwt.root
+InputFile: Trees/xsectree_v2rwt.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv3_
+TuneName: GENIEv2_
 
 // Name of output file (.root for modifiable canvas)
-OutputFile: temp/1Dxsec.png
+OutputFile: temp/1Drate.png
 
 //------------------------------------------------------------------------
 //          Select neutrino interaction (commas for multiple)
@@ -125,7 +125,7 @@ BinEdges: [-1], [-1]
 MaxError: 0.01
 
 // Plot cross-section (true) or rate (false)
-PlotXSec: true
+PlotXSec: false
 
 // Plot filled histograms (true)
 PlotFilled: false
@@ -146,7 +146,7 @@ ShowStatError: true
 ShowSystError: true
 
 // List of systematics to include (genie, flux, detector, background, constant)
-Systematics: genie, flux
+Systematics: genie, flux, detector, background, constant
 
 // Value of constant percentage systematic error (0->1)
 ConstantSyst: 0.027

@@ -44,7 +44,7 @@ class Configuration
   std::vector<TString> systematics;      // Systematics to apply
   double constant_syst = 0;              // Flat systematic uncertainty
   int detector_nuni = 50;                // Number of universes for detector systematics
-  int reweight_nuni = 50;               // Number of universes for reweighting systematics
+  int reweight_nuni = 100;               // Number of universes for reweighting systematics
   bool show_error_bars = false;          // Show error bars on plots
   bool plot_correlation = false;         // Plot systematic correlation/covariance matrices
   bool plot_universes = false;           // Plot universe variations

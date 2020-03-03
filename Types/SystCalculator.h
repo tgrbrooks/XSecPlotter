@@ -192,7 +192,7 @@ class SystCalculator
       }
       // Add up the errors
       double tot_err = std::sqrt(std::pow(tot_cos_err, 2.)+std::pow(tot_dirt_err, 2.));
-      if(tot_err == 0) tot_err = 0.01*histman->total->total_hist->GetBinContent(n);
+      if(tot_err == 0) tot_err = 0.001*histman->total->total_hist->GetBinContent(n);
       histman->total->systematics->background->mean_syst->SetBinContent(n, histman->total->total_hist->GetBinContent(n));
       histman->total->systematics->background->mean_syst->SetBinError(n, tot_err);
     }
@@ -218,7 +218,7 @@ class SystCalculator
         }
         // Add up the errors
         double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
-        if(tot_err == 0) tot_err = 0.01*kv1D.second->total_hist->GetBinContent(n);
+        if(tot_err == 0) tot_err = 0.001*kv1D.second->total_hist->GetBinContent(n);
         kv1D.second->systematics->background->mean_syst->SetBinContent(n, kv1D.second->total_hist->GetBinContent(n));
         kv1D.second->systematics->background->mean_syst->SetBinError(n, tot_err);
       }
@@ -257,7 +257,7 @@ class SystCalculator
 
         // Add up errors
         double tot_err = std::sqrt(std::pow(cos_sub_err, 2.)+std::pow(dirt_sub_err, 2.));
-        if(tot_err == 0) tot_err = 0.01*kv2D.second->total_hist->GetBinContent(i);
+        if(tot_err == 0) tot_err = 0.001*kv2D.second->total_hist->GetBinContent(i);
         kv2D.second->systematics->background->mean_syst->SetBinContent(i, kv2D.second->total_hist->GetBinContent(i));
         kv2D.second->systematics->background->std_syst->SetBinContent(i, tot_err);
       }

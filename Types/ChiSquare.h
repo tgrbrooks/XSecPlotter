@@ -223,6 +223,74 @@ class ChiSquare
     return (double)n/N;
   }
 
+
+  // -------------------------------------------------------------------------------------------------
+  //                                        2D P VALUES
+  // -------------------------------------------------------------------------------------------------
+
+  double PValue(TH2D* data, Histo2D* mc){
+
+    int N = 1000000;
+    int n = 0;
+    int nbins = mc->total_hist->GetNumberOfBins();
+    // Calculate chi square between data and mc
+    std::pair<double, double> data_chi2 = Calculate(data, mc);
+
+    double maxbin = max(3.*nbins, data_chi2.first+10.);
+    TH1D* chi_dist = new TH1D("chi_dist", "", 100, 0, maxbin);
+    std::vector<double> chi_vec;
+    // Loop over N universes
+    for(int i = 0; i < N; i++){
+      TH2Poly* uni = (TH2Poly*) mc->total_hist->Clone("uni");
+      uni->Reset();
+      // Loop over bins in histogram
+      for(int b = 1; b <= nbins; b++){
+        // Generate Poisson distributed random number for bin with mean as mc value
+        double mean = mc->total_hist->GetBinContent(b);
+        double rand = randgen->Poisson(mean);
+        // TODO if looking at cross section is random variable a gaussian? what's the standard deviation? stat or syst?
+        // Fill histogram for each universe
+        uni->SetBinContent(b, rand);
+      }
+      // Calculate chi square statistic for universe
+      std::pair<double, double> chi2 = Calculate(uni, mc->total_hist);
+      // Fill histogram of chi squares
+      chi_dist->Fill(chi2.first);
+      chi_vec.push_back(chi2.first);
+      delete uni;
+    }
+
+    // Count number of universes with more extreme chi square, n
+    for(auto const& chi : chi_vec){
+      if(chi >= data_chi2.first) n++;
+    }
+
+    // Draw chi2 distribution
+    bool draw = true;
+    if(draw){
+      TCanvas *canvas = new TCanvas("temp", "", 900, 600);
+      canvas->SetMargin(0.15, 0.04, 0.15, 0.15);
+      chi_dist->GetXaxis()->SetTitle("#chi^{2}");
+      chi_dist->GetYaxis()->SetTitle("P(#chi^{2})");
+      chi_dist->SetLineWidth(3);
+      chi_dist->SetLineColor(46);
+      chi_dist->Scale(1./N);
+      chi_dist->Draw("HIST C");
+      double hmax = chi_dist->GetMaximum();
+      TLine *line = new TLine(data_chi2.first, 0, data_chi2.first, hmax);
+      line->SetLineStyle(9);
+      line->Draw("same");
+      TString output_file = config->output_file;
+      output_file.ReplaceAll(".","_"+TString(mc->total_hist->GetName())+"_chi2.");
+      canvas->SaveAs(output_file);
+      delete canvas;
+      delete line;
+    }
+
+    // Return n/N
+    delete chi_dist;
+    return (double)n/N;
+  }
   
   
 };

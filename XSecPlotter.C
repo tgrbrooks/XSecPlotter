@@ -13,6 +13,7 @@
 #include <TStyle.h>
 #include <TLatex.h>
 #include <TLine.h>
+#include <TRandom3.h>
 #include <TVector3.h>
 #include <TLegend.h>
 #include <TF1.h>
@@ -55,6 +56,7 @@ void XSecPlotter(){
 
   // Setting the style
   SetStyle();
+  TRandom3 *randgen = new TRandom3(0);
 
   //-------------------------------------------------------------------------
   //                            CONFIGURATION
@@ -155,7 +157,7 @@ void XSecPlotter(){
   Plotter *plotter = new Plotter(config, titles);
 
   // Create a chi2 calculater for comparing models
-  ChiSquare *chsq = new ChiSquare(config);
+  ChiSquare *chsq = new ChiSquare(config, randgen);
 
   //-------------------------------------------------------------------------
   //                              1D PLOTS

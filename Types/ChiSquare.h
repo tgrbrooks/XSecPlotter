@@ -14,11 +14,13 @@ class ChiSquare
   public:
 
   Configuration *config;
+  TRandom3 *randgen;
 
   // Constructor
-  ChiSquare(Configuration *c)
+  ChiSquare(Configuration *c, TRandom3 *r)
   {
     config = c;
+    randgen = r;
   }
 
   // -------------------------------------------------------------------------------------------------
@@ -176,7 +178,7 @@ class ChiSquare
       for(int b = 1; b <= nbins; b++){
         // Generate Poisson distributed random number for bin with mean as mc value
         double mean = mc->total_hist->GetBinContent(b);
-        double rand = gRandom->Poisson(mean);
+        double rand = randgen->Poisson(mean);
         // TODO if looking at cross section is random variable a gaussian? what's the standard deviation? stat or syst?
         // Fill histogram for each universe
         uni->SetBinContent(b, rand);

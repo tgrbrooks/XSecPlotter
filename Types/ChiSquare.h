@@ -184,7 +184,7 @@ class ChiSquare
         uni->SetBinContent(b, rand);
       }
       // Calculate chi square statistic for universe
-      std::pair<double, double> chi2 = Calculate(uni, mc->total_hist);
+      std::pair<double, double> chi2 = Calculate(uni, mc);
       // Fill histogram of chi squares
       chi_dist->Fill(chi2.first);
       chi_vec.push_back(chi2.first);
@@ -206,6 +206,7 @@ class ChiSquare
       chi_dist->SetLineWidth(3);
       chi_dist->SetLineColor(46);
       chi_dist->Scale(1./N);
+      chi_dist->GetYaxis()->SetMaxDigits(3);
       chi_dist->Draw("HIST C");
       double hmax = chi_dist->GetMaximum();
       TLine *line = new TLine(data_chi2.first, 0, data_chi2.first, hmax);
@@ -228,7 +229,7 @@ class ChiSquare
   //                                        2D P VALUES
   // -------------------------------------------------------------------------------------------------
 
-  double PValue(TH2D* data, Histo2D* mc){
+  double PValue(TH2Poly* data, Histo2D* mc){
 
     int N = 1000000;
     int n = 0;
@@ -242,7 +243,7 @@ class ChiSquare
     // Loop over N universes
     for(int i = 0; i < N; i++){
       TH2Poly* uni = (TH2Poly*) mc->total_hist->Clone("uni");
-      uni->Reset();
+      uni->ClearBinContents();
       // Loop over bins in histogram
       for(int b = 1; b <= nbins; b++){
         // Generate Poisson distributed random number for bin with mean as mc value
@@ -253,7 +254,7 @@ class ChiSquare
         uni->SetBinContent(b, rand);
       }
       // Calculate chi square statistic for universe
-      std::pair<double, double> chi2 = Calculate(uni, mc->total_hist);
+      std::pair<double, double> chi2 = Calculate(uni, mc);
       // Fill histogram of chi squares
       chi_dist->Fill(chi2.first);
       chi_vec.push_back(chi2.first);
@@ -275,6 +276,7 @@ class ChiSquare
       chi_dist->SetLineWidth(3);
       chi_dist->SetLineColor(46);
       chi_dist->Scale(1./N);
+      chi_dist->GetYaxis()->SetMaxDigits(3);
       chi_dist->Draw("HIST C");
       double hmax = chi_dist->GetMaximum();
       TLine *line = new TLine(data_chi2.first, 0, data_chi2.first, hmax);

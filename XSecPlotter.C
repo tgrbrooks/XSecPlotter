@@ -251,13 +251,16 @@ void XSecPlotter(){
     // If more than two input files, calculate chi2
     if(config->input_file.size() == 2){
       std::pair<double, int> chindof; 
+      double pvalue;
       if(config->plot_xsec){
         chindof = chsq->Calculate(histmans[0]->GetHisto2D(0, 1)->xsec_hist, histmans[1]->GetHisto2D(0, 1));
       }
       else{
         chindof = chsq->Calculate(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
+        pvalue = chsq->PValue(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
       }
       std::cout<<"2D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
+      std::cout<<"P-value = "<<pvalue<<"\n";
     }
   }
   std::cout<<"...Finished.\n";

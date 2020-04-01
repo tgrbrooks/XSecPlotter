@@ -28,7 +28,7 @@ class ChiSquare
   // -------------------------------------------------------------------------------------------------
 
   // Calculate chi2 between fake data and MC for 1D distributions
-  std::pair<double, int> Calculate(TH1D* data, Histo1D* mc){
+  std::pair<double, int> Calculate(Histo1D* data, Histo1D* mc){
 
     int nbins = mc->systematics->total->covariance->GetNbinsX();
 
@@ -40,16 +40,24 @@ class ChiSquare
     // Fill covariance matrix
     for (int i = 1; i <= nbins; i ++) {
       for (int j = 1; j <= nbins; j ++) {
-        cov[i-1][j-1] = mc->systematics->total->covariance->GetBinContent(i, j);
-        if(i==j){ cov[i-1][j-1] += pow(mc->xsec_hist->GetBinError(i), 2);
-          std::cout<<i<<" "<<j<<" syst = "<<mc->systematics->total->covariance->GetBinContent(i, j)<<" stat = "<<pow(mc->xsec_hist->GetBinError(i), 2)<<" total = "<<cov[i-1][j-1]<<"\n";}
+        cov[i-1][j-1] = data->systematics->total->covariance->GetBinContent(i, j);
+        if(i==j){ 
+          double stat_err = pow(data->total_hist->GetBinError(i), 2);
+          if(config->plot_xsec) stat_err = pow(data->xsec_hist->GetBinError(i), 2);
+          double perr = sqrt(stat_err)/data->total_hist->GetBinContent(i);
+          if(config->plot_xsec) perr = sqrt(stat_err)/data->xsec_hist->GetBinContent(i);
+          cov[i-1][j-1] += stat_err;
+          std::cout<<i<<" syst = "<<data->systematics->total->covariance->GetBinContent(i, j)<<" stat = "<<stat_err<<" ("<<perr<<") total = "<<cov[i-1][j-1]<<"\n";
+        }
       }
     }
 
+    // Scale covariance matrix to try to avoid inversion errors
     double scale = 1./cov[0][0];
     cov *= scale;
     // Invert the covariance matrix
     TMatrix cov_inv = cov.Invert();
+    // Scale back
     cov_inv *= scale;
 
     // Loop over all combinations of bins
@@ -57,11 +65,13 @@ class ChiSquare
     for (int i = 1; i <= nbins; i++) {
       for (int j = 1; j <= nbins; j++) {
 
-        double data_i = data->GetBinContent(i);
+        double data_i = data->total_hist->GetBinContent(i);
+        if(config->plot_xsec) data_i = data->xsec_hist->GetBinContent(i);
         double mc_i = mc->total_hist->GetBinContent(i);
         if(config->plot_xsec) mc_i = mc->xsec_hist->GetBinContent(i);
 
-        double data_j = data->GetBinContent(j);
+        double data_j = data->total_hist->GetBinContent(j);
+        if(config->plot_xsec) data_j = data->xsec_hist->GetBinContent(j);
         double mc_j = mc->total_hist->GetBinContent(j);
         if(config->plot_xsec) mc_j = mc->xsec_hist->GetBinContent(j);
 
@@ -95,7 +105,7 @@ class ChiSquare
   // -------------------------------------------------------------------------------------------------
 
   // Calculate chi2 between fake data and MC for 2D distributions TODO xsec stat errors
-  std::pair<double, int> Calculate(TH2Poly* data, Histo2D* mc){
+  std::pair<double, int> Calculate(Histo2D* data, Histo2D* mc){
 
     int nbins = mc->xsec_hist->GetNumberOfBins();
 
@@ -103,8 +113,8 @@ class ChiSquare
     std::vector<int> filled_bins;
     for(int i = 1; i <= nbins; i++){
       // Doesn't work if there is no entry in MC bin
-      if(mc->systematics->total->covariance->GetBinContent(i, i)+data->GetBinError(i) < 1e-16
-         || mc->total_hist->GetBinContent(i) < 1e-16) continue;
+      if(mc->systematics->total->covariance->GetBinContent(i, i)+data->total_hist->GetBinError(i) < 1e-20
+         || mc->total_hist->GetBinContent(i) < 1e-20) continue;
       filled_bins.push_back(i);
     }
 
@@ -118,9 +128,15 @@ class ChiSquare
       int bin_i = filled_bins[i];
       for (size_t j = 0; j < filled_bins.size(); j ++) {
         int bin_j = filled_bins[j];
-        cov[i][j] = mc->systematics->total->covariance->GetBinContent(bin_i, bin_j);
-        if(bin_i == bin_j){ cov[i][j] += pow(mc->xsec_hist->GetBinError(bin_i), 2); 
-          std::cout<<bin_i<<" "<<bin_j<<" syst = "<<mc->systematics->total->covariance->GetBinContent(bin_i, bin_j)<<" stat = "<<pow(mc->xsec_hist->GetBinError(bin_i), 2)<<" total = "<<cov[i][j]<<"\n";}
+        cov[i][j] = data->systematics->total->covariance->GetBinContent(bin_i, bin_j);
+        if(bin_i == bin_j){ 
+          double stat_err = pow(data->total_hist->GetBinError(bin_i), 2);
+          if(config->plot_xsec) stat_err = pow(data->xsec_err->GetBinContent(bin_i), 2);
+          double perr = sqrt(stat_err)/data->total_hist->GetBinContent(bin_i);
+          if(config->plot_xsec) perr = sqrt(stat_err)/data->xsec_hist->GetBinContent(bin_i);
+          cov[i][j] += stat_err; 
+          std::cout<<bin_i<<" syst = "<<data->systematics->total->covariance->GetBinContent(bin_i, bin_j)<<" stat = "<<stat_err<<" ("<<perr<<") total = "<<cov[i][j]<<"\n";
+        }
       }
     }
 
@@ -142,11 +158,13 @@ class ChiSquare
       for (size_t j = 0; j < filled_bins.size(); j++) {
         int bin_j = filled_bins[j];
 
-        double data_i = data->GetBinContent(bin_i);
+        double data_i = data->total_hist->GetBinContent(bin_i);
+        if(config->plot_xsec) data_i = data->xsec_hist->GetBinContent(bin_i);
         double mc_i = mc->total_hist->GetBinContent(bin_i);
         if(config->plot_xsec) mc_i = mc->xsec_hist->GetBinContent(bin_i);
 
-        double data_j = data->GetBinContent(bin_j);
+        double data_j = data->total_hist->GetBinContent(bin_j);
+        if(config->plot_xsec) data_j = data->xsec_hist->GetBinContent(bin_j);
         double mc_j = mc->total_hist->GetBinContent(bin_j);
         if(config->plot_xsec) mc_j = mc->xsec_hist->GetBinContent(bin_j);
 
@@ -160,7 +178,7 @@ class ChiSquare
   // -------------------------------------------------------------------------------------------------
   //                                        1D P VALUES
   // -------------------------------------------------------------------------------------------------
-
+/*
   double PValue(TH1D* data, Histo1D* mc){
 
     int N = 1000000;
@@ -226,12 +244,12 @@ class ChiSquare
     delete chi_dist;
     return (double)n/N;
   }
-
+*/
 
   // -------------------------------------------------------------------------------------------------
   //                                        2D P VALUES
   // -------------------------------------------------------------------------------------------------
-
+/*
   double PValue(TH2Poly* data, Histo2D* mc){
 
     int N = 1000000;
@@ -297,7 +315,7 @@ class ChiSquare
     delete chi_dist;
     return (double)n/N;
   }
-  
+  */
   
 };
 

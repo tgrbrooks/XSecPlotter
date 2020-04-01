@@ -49,10 +49,15 @@ class XSecCalculator
   }
 
   // Cross section from 2D histogram ("data") TODO errors
-  TH2Poly* ToXSec(Histo2D* histo){
+  std::pair<TH2Poly*, TH2Poly*> ToXSec(Histo2D* histo){
 
     // Clone the rate
     TH2Poly* xsec_hist = (TH2Poly*)histo->total_hist->Clone(TString(histo->total_hist->GetName())+"_xsec");
+    TH2Poly* xsec_err = (TH2Poly*)histo->total_hist->Clone(TString(histo->total_hist->GetName())+"_xsecerr");
+    std::vector<double> perrs;
+    for(int i = 1; i <= xsec_hist->GetNumberOfBins(); i++){
+      perrs.push_back(xsec_hist->GetBinError(i)/xsec_hist->GetBinContent(i));
+    };
 
     // Subtract background
     for(int i = 0; i <= xsec_hist->GetNumberOfBins()+1; i++){
@@ -70,8 +75,12 @@ class XSecCalculator
     double flux = fluxman->IntegratedFlux();
     double scale = 1e38/(nt * flux);
     xsec_hist->Scale(scale);
+
+    for(int i = 1; i <= xsec_hist->GetNumberOfBins(); i++){
+      xsec_err->SetBinContent(i, perrs[i-1]*xsec_hist->GetBinContent(i));
+    };
     
-    return xsec_hist;
+    return std::make_pair(xsec_hist, xsec_err);
   }
 
   // Cross section from 1D universe variation

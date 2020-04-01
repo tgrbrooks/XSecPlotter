@@ -551,7 +551,9 @@ class HistManager
   // Calculate the 2D cross section
   void SetXSec(int var_i, int var_j){
     std::pair<TString, TString> key = std::make_pair(config->plot_variables[var_i], config->plot_variables[var_j]);
-    histos_2D[key]->xsec_hist = xsec->ToXSec(histos_2D[key]);
+    std::pair<TH2Poly*, TH2Poly*> xsec_conv = xsec->ToXSec(histos_2D[key]);
+    histos_2D[key]->xsec_hist = xsec_conv.first;
+    histos_2D[key]->xsec_err = xsec_conv.second;
 
     // Do a little formatting
     histos_2D[key]->xsec_hist->SetFillColor(config->cols[0]);

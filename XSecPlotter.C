@@ -125,7 +125,8 @@ void XSecPlotter(){
   // Calculate systematics and associate to histograms if requested
   if(config->show_syst_error){
     std::cout<<"Calculating the systematics...\n";
-    for(size_t file_i = 0; file_i < histmans.size(); file_i++){
+    //for(size_t file_i = 0; file_i < histmans.size(); file_i++){
+    for(size_t file_i = 0; file_i < 1; file_i++){
       // Systematics are handeled differently between cross section and rate
       if(config->plot_xsec){
         XSecSystCalculator(config, histmans[file_i], datamans[file_i], file_i);
@@ -201,17 +202,9 @@ void XSecPlotter(){
 
     // If two input files used calculate chi2 between models
     if(config->input_file.size() == 2){
-      std::pair<double, int> chindof; 
-      double pvalue;
-      if(config->plot_xsec){
-        chindof = chsq->Calculate(histmans[0]->GetHisto1D(i)->xsec_hist, histmans[1]->GetHisto1D(i));
-        pvalue = TMath::Prob(chindof.first, chindof.second);
-      }
-      else {
-        chindof = chsq->Calculate(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
-        //pvalue = chsq->PValue(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
-        pvalue = TMath::Prob(chindof.first, chindof.second);
-      }
+      std::pair<double, int> chindof = chsq->Calculate(histmans[0]->GetHisto1D(i), histmans[1]->GetHisto1D(i));
+      //pvalue = chsq->PValue(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
+      double pvalue = TMath::Prob(chindof.first, chindof.second);
       std::cout<<"1D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
       std::cout<<"P-value = "<<pvalue<<"\n";
     }
@@ -252,17 +245,9 @@ void XSecPlotter(){
 
     // If more than two input files, calculate chi2
     if(config->input_file.size() == 2){
-      std::pair<double, int> chindof; 
-      double pvalue;
-      if(config->plot_xsec){
-        chindof = chsq->Calculate(histmans[0]->GetHisto2D(0, 1)->xsec_hist, histmans[1]->GetHisto2D(0, 1));
-        pvalue = TMath::Prob(chindof.first, chindof.second);
-      }
-      else{
-        chindof = chsq->Calculate(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
-        //pvalue = chsq->PValue(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
-        pvalue = TMath::Prob(chindof.first, chindof.second);
-      }
+      std::pair<double, int> chindof = chsq->Calculate(histmans[0]->GetHisto2D(0, 1), histmans[1]->GetHisto2D(0, 1));
+      //pvalue = chsq->PValue(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
+      double pvalue = TMath::Prob(chindof.first, chindof.second);
       std::cout<<"2D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
       std::cout<<"P-value = "<<pvalue<<"\n";
     }

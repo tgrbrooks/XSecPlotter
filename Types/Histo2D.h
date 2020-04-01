@@ -15,6 +15,7 @@ class Histo2D
   TH2Poly* total_hist;  // Total rate histogram
   TH2Poly* bkg_hist;    // Background histogram
   TH2Poly* xsec_hist;   // Cross section histogram
+  TH2Poly* xsec_err;   // Cross section histogram
 
   std::vector<THStack*> stacked_hist;       // Stacked histogram by type
   TLegend* legend;                          // Legend for stacked histogram
@@ -40,6 +41,7 @@ class Histo2D
     // Create background and cross section histograms
     bkg_hist = (TH2Poly*) empty->Clone(name+"_bkg");
     xsec_hist = (TH2Poly*) empty->Clone(name+"_xsec");
+    xsec_err = (TH2Poly*) empty->Clone(name+"_xsecerr");
 
     // Set stacked histograms and legend
     stacked_hist = stack2D.first;
@@ -78,6 +80,8 @@ class Histo2D
     TH1D* xsec = SlicePoly(xsec_hist, i, slice_name+"_xsec", ybins, xbins);
     xsec->SetLineWidth(3);
     xsec->SetLineColor(46);
+
+    // Get correct statistical errors for 1D slice
     TH1D* errors = (TH1D*) total->Clone();
     errors->Add(bkg, -1.);
     for(int i = 0; i <= errors->GetNbinsX()+1; i++){

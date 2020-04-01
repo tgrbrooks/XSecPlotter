@@ -291,7 +291,8 @@ class Plotter
       double width = wy*wx;
       int j = bin->GetBinNumber();
       if(config->plot_xsec){
-        hist->SetBinContent(j, histo->xsec_hist->GetBinContent(j)/width);
+        //hist->SetBinContent(j, histo->xsec_hist->GetBinContent(j)/width);
+        hist->SetBinContent(j, histo->xsec_hist->GetBinContent(j));
       }
       else{
         hist->SetBinContent(j, histo->total_hist->GetBinContent(j)/width);
@@ -462,7 +463,7 @@ class Plotter
       }
 
       // Set the errors if showing
-      if(histos.size() > 1 && file_i == 0) continue;
+      if(histos.size() > 1 && file_i > 0) continue;
       if(config->show_error_bars){
         // Add statistical and systematic errors bin by bin
         for(int n = 0; n <= error_hist->GetNbinsX(); n++){

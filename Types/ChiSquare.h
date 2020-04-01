@@ -44,10 +44,9 @@ class ChiSquare
         if(i==j){ 
           double stat_err = pow(data->total_hist->GetBinError(i), 2);
           if(config->plot_xsec) stat_err = pow(data->xsec_hist->GetBinError(i), 2);
-          double perr = sqrt(stat_err)/data->total_hist->GetBinContent(i);
-          if(config->plot_xsec) perr = sqrt(stat_err)/data->xsec_hist->GetBinContent(i);
           cov[i-1][j-1] += stat_err;
-          std::cout<<i<<" syst = "<<data->systematics->total->covariance->GetBinContent(i, j)<<" stat = "<<stat_err<<" ("<<perr<<") total = "<<cov[i-1][j-1]<<"\n";
+          double perr = sqrt(cov[i-1][j-1])/data->total_hist->GetBinContent(i);
+          if(config->plot_xsec) perr = sqrt(cov[i-1][j-1])/data->xsec_hist->GetBinContent(i);
         }
       }
     }
@@ -132,10 +131,9 @@ class ChiSquare
         if(bin_i == bin_j){ 
           double stat_err = pow(data->total_hist->GetBinError(bin_i), 2);
           if(config->plot_xsec) stat_err = pow(data->xsec_err->GetBinContent(bin_i), 2);
-          double perr = sqrt(stat_err)/data->total_hist->GetBinContent(bin_i);
-          if(config->plot_xsec) perr = sqrt(stat_err)/data->xsec_hist->GetBinContent(bin_i);
           cov[i][j] += stat_err; 
-          std::cout<<bin_i<<" syst = "<<data->systematics->total->covariance->GetBinContent(bin_i, bin_j)<<" stat = "<<stat_err<<" ("<<perr<<") total = "<<cov[i][j]<<"\n";
+          double perr = sqrt(cov[i][j])/data->total_hist->GetBinContent(bin_i);
+          if(config->plot_xsec) perr = sqrt(cov[i][j])/data->xsec_hist->GetBinContent(bin_i);
         }
       }
     }

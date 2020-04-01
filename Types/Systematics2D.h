@@ -105,11 +105,14 @@ class Systematics2D
     size_t nbins = mean_syst->GetNumberOfBins();
 
     // For constant errors covariance is just diagonal variance matrix
+    std::cout<<"\n2D\n";
     if(universes.size()==0){
       for(size_t i = 1; i <= nbins; i++){
         for(size_t j = 1; j <= nbins; j++){
           if(i==j){ 
+            std::cout<<"content = "<<mean_syst->GetBinContent(i)<<" err = "<<std_syst->GetBinContent(i)<<" percent = "<<std_syst->GetBinContent(i)/mean_syst->GetBinContent(i)<<" \n";
             covariance->SetBinContent(i, j, pow(std_syst->GetBinContent(i), 2));
+            std::cout<<"Covariance = "<<pow(std_syst->GetBinContent(i), 2)<<"\n";
             frac_covariance->SetBinContent(i, j, pow(std_syst->GetBinContent(i),2)/pow(cv_hist->GetBinContent(i),2));
             correlation->SetBinContent(i, j, 1.);
           }

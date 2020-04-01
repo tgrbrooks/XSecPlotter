@@ -41,7 +41,8 @@ class ChiSquare
     for (int i = 1; i <= nbins; i ++) {
       for (int j = 1; j <= nbins; j ++) {
         cov[i-1][j-1] = mc->systematics->total->covariance->GetBinContent(i, j);
-        if(i==j) cov[i-1][j-1] += pow(data->GetBinError(i), 2);
+        if(i==j){ cov[i-1][j-1] += pow(mc->xsec_hist->GetBinError(i), 2);
+          std::cout<<i<<" "<<j<<" syst = "<<mc->systematics->total->covariance->GetBinContent(i, j)<<" stat = "<<pow(mc->xsec_hist->GetBinError(i), 2)<<" total = "<<cov[i-1][j-1]<<"\n";}
       }
     }
 
@@ -102,8 +103,8 @@ class ChiSquare
     std::vector<int> filled_bins;
     for(int i = 1; i <= nbins; i++){
       // Doesn't work if there is no entry in MC bin
-      if(mc->systematics->total->covariance->GetBinContent(i, i)+data->GetBinError(i) < 1e-6
-         || mc->total_hist->GetBinContent(i) < 1e-6) continue;
+      if(mc->systematics->total->covariance->GetBinContent(i, i)+data->GetBinError(i) < 1e-16
+         || mc->total_hist->GetBinContent(i) < 1e-16) continue;
       filled_bins.push_back(i);
     }
 
@@ -118,7 +119,8 @@ class ChiSquare
       for (size_t j = 0; j < filled_bins.size(); j ++) {
         int bin_j = filled_bins[j];
         cov[i][j] = mc->systematics->total->covariance->GetBinContent(bin_i, bin_j);
-        if(bin_i == bin_j) cov[i][j] += pow(data->GetBinError(bin_i), 2); 
+        if(bin_i == bin_j){ cov[i][j] += pow(mc->xsec_hist->GetBinError(bin_i), 2); 
+          std::cout<<bin_i<<" "<<bin_j<<" syst = "<<mc->systematics->total->covariance->GetBinContent(bin_i, bin_j)<<" stat = "<<pow(mc->xsec_hist->GetBinError(bin_i), 2)<<" total = "<<cov[i][j]<<"\n";}
       }
     }
 
@@ -178,7 +180,8 @@ class ChiSquare
       for(int b = 1; b <= nbins; b++){
         // Generate Poisson distributed random number for bin with mean as mc value
         double mean = mc->total_hist->GetBinContent(b);
-        double rand = randgen->Poisson(mean);
+        //double rand = randgen->Poisson(mean);
+        double rand = randgen->Gaus(mean, mc->systematics->total->mean_syst->GetBinError(b));
         // TODO if looking at cross section is random variable a gaussian? what's the standard deviation? stat or syst?
         // Fill histogram for each universe
         uni->SetBinContent(b, rand);
@@ -248,7 +251,8 @@ class ChiSquare
       for(int b = 1; b <= nbins; b++){
         // Generate Poisson distributed random number for bin with mean as mc value
         double mean = mc->total_hist->GetBinContent(b);
-        double rand = randgen->Poisson(mean);
+        //double rand = randgen->Poisson(mean);
+        double rand = randgen->Gaus(mean, mc->systematics->total->std_syst->GetBinContent(b));
         // TODO if looking at cross section is random variable a gaussian? what's the standard deviation? stat or syst?
         // Fill histogram for each universe
         uni->SetBinContent(b, rand);

@@ -205,10 +205,12 @@ void XSecPlotter(){
       double pvalue;
       if(config->plot_xsec){
         chindof = chsq->Calculate(histmans[0]->GetHisto1D(i)->xsec_hist, histmans[1]->GetHisto1D(i));
+        pvalue = TMath::Prob(chindof.first, chindof.second);
       }
       else {
         chindof = chsq->Calculate(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
-        pvalue = chsq->PValue(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
+        //pvalue = chsq->PValue(histmans[0]->GetHisto1D(i)->total_hist, histmans[1]->GetHisto1D(i));
+        pvalue = TMath::Prob(chindof.first, chindof.second);
       }
       std::cout<<"1D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
       std::cout<<"P-value = "<<pvalue<<"\n";
@@ -254,10 +256,12 @@ void XSecPlotter(){
       double pvalue;
       if(config->plot_xsec){
         chindof = chsq->Calculate(histmans[0]->GetHisto2D(0, 1)->xsec_hist, histmans[1]->GetHisto2D(0, 1));
+        pvalue = TMath::Prob(chindof.first, chindof.second);
       }
       else{
         chindof = chsq->Calculate(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
-        pvalue = chsq->PValue(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
+        //pvalue = chsq->PValue(histmans[0]->GetHisto2D(0, 1)->total_hist, histmans[1]->GetHisto2D(0, 1));
+        pvalue = TMath::Prob(chindof.first, chindof.second);
       }
       std::cout<<"2D chi^2 = "<<chindof.first<<", ndof = "<<chindof.second<<" chi^2/ndof = "<<chindof.first/chindof.second<<"\n";
       std::cout<<"P-value = "<<pvalue<<"\n";

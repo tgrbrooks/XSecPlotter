@@ -659,7 +659,7 @@ class HistManager
     // If plotting cross section convert from rate
     total_hist->Scale(1, "width");
     total_hist->SetLineColor(config->cols[0]);
-    if(config->plot_variables.size() > 1) total_hist->SetLineStyle(config->lsty[file_i]);
+    if(config->input_file.size() > 1) total_hist->SetLineStyle(config->lsty[file_i]);
     return total_hist;
   }
 

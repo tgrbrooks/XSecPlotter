@@ -44,6 +44,15 @@ class XSecCalculator
     double flux = fluxman->IntegratedFlux();
     double scale = 1e38/(nt * flux);
     xsec_hist->Scale(scale);
+
+    if(xsec_hist->GetNbinsX()==1){
+      std::cout<<"Total = "<<histo->total_hist->GetBinContent(1)<<"\n"
+               <<"Background = "<<histo->bkg_hist->GetBinContent(1)<<"\n"
+               <<"Efficiency = "<<eff->GetBinContent(1)<<"\n"
+               <<"Targets = "<<nt<<"\n"
+               <<"Flux = "<<flux<<"\n"
+               <<"XSec = "<<xsec_hist->GetBinContent(1)<<"\n";
+    }
     
     return xsec_hist;
   }

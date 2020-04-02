@@ -89,13 +89,13 @@ class SystSummary2D
   }
 
   // Get 1D systematics for slice in Y bin
-  SystSummary* Slice(size_t i){
-    Systematics* genie_s = genie->Slice(i);
-    Systematics* flux_s = flux->Slice(i);
-    Systematics* detector_s = detector->Slice(i);
-    Systematics* background_s = background->Slice(i);
-    Systematics* constant_s = constant->Slice(i);
-    Systematics* total_s = total->Slice(i);
+  SystSummary* Slice(size_t i, bool xsec){
+    Systematics* genie_s = genie->Slice(i, xsec);
+    Systematics* flux_s = flux->Slice(i, xsec);
+    Systematics* detector_s = detector->Slice(i, xsec);
+    Systematics* background_s = background->Slice(i, xsec);
+    Systematics* constant_s = constant->Slice(i, xsec);
+    Systematics* total_s = total->Slice(i, xsec);
     SystSummary* summary = new SystSummary(genie_s, flux_s, detector_s, background_s, constant_s, total_s);
     return summary;
   }

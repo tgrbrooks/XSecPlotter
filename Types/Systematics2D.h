@@ -48,7 +48,7 @@ class Systematics2D
 
 
   // Create 1D slice in Y bin
-  Systematics* Slice(size_t i){
+  Systematics* Slice(size_t i, bool xsec){
     int bin = i;
 
     // Universe slices
@@ -57,13 +57,13 @@ class Systematics2D
     TString slice_name = sname + Form("_%.1f_%.1f", ybins[i], ybins[i+1]);
     // Get the 1D slice for each universe
     for(size_t u = 0; u < universes.size(); u++){
-      uni_s.push_back(SlicePoly(universes[u], i, Form(slice_name+"_uni%i", (int)u), ybins, xbins));
+      uni_s.push_back(SlicePoly(universes[u], i, Form(slice_name+"_uni%i", (int)u), ybins, xbins, xsec));
     }
 
     // Slice the mean and standard deviation histograms
-    TH1D* mean_s = SlicePoly(mean_syst, i, slice_name, ybins, xbins);
+    TH1D* mean_s = SlicePoly(mean_syst, i, slice_name, ybins, xbins, xsec);
     // Need to get the errors separately
-    TH1D* std_s = SlicePoly(std_syst, i, slice_name+"_stddev", ybins, xbins);
+    TH1D* std_s = SlicePoly(std_syst, i, slice_name+"_stddev", ybins, xbins, xsec);
     for(int x = 1; x <= mean_s->GetNbinsX(); x++) mean_s->SetBinError(x, std_s->GetBinContent(x));
 
     // Create 1D systematics
@@ -105,14 +105,11 @@ class Systematics2D
     size_t nbins = mean_syst->GetNumberOfBins();
 
     // For constant errors covariance is just diagonal variance matrix
-    std::cout<<"\n2D\n";
     if(universes.size()==0){
       for(size_t i = 1; i <= nbins; i++){
         for(size_t j = 1; j <= nbins; j++){
           if(i==j){ 
-            std::cout<<"content = "<<mean_syst->GetBinContent(i)<<" err = "<<std_syst->GetBinContent(i)<<" percent = "<<std_syst->GetBinContent(i)/mean_syst->GetBinContent(i)<<" \n";
             covariance->SetBinContent(i, j, pow(std_syst->GetBinContent(i), 2));
-            std::cout<<"Covariance = "<<pow(std_syst->GetBinContent(i), 2)<<"\n";
             frac_covariance->SetBinContent(i, j, pow(std_syst->GetBinContent(i),2)/pow(cv_hist->GetBinContent(i),2));
             correlation->SetBinContent(i, j, 1.);
           }

@@ -69,7 +69,7 @@ class Histo2D
 
 
   // Slice in y axis bins
-  Histo1D* Slice(size_t i){
+  Histo1D* Slice(size_t i, bool is_xsec){
     int bin = i;
     // Name the slice
     TString slice_name = name + Form("_%.1f_%.1f", ybins[i], ybins[i+1]);
@@ -77,7 +77,7 @@ class Histo2D
     // Slice the 2D histograms
     TH1D* total = SlicePoly(total_hist, i, slice_name, ybins, xbins);
     TH1D* bkg = SlicePoly(bkg_hist, i, slice_name+"_bkg", ybins, xbins);
-    TH1D* xsec = SlicePoly(xsec_hist, i, slice_name+"_xsec", ybins, xbins);
+    TH1D* xsec = SlicePoly(xsec_hist, i, slice_name+"_xsec", ybins, xbins, is_xsec);
     xsec->SetLineWidth(3);
     xsec->SetLineColor(46);
 
@@ -102,7 +102,7 @@ class Histo2D
                                                , SlicePoly(purity.second, i, slice_name+"_pd", ybins, xbins));
 
     // Slice the systematics
-    SystSummary* syst1D = systematics->Slice(i);
+    SystSummary* syst1D = systematics->Slice(i, is_xsec);
 
     // Create a new 1D histogram
     Histo1D* sliced_histo = new Histo1D(total, bkg, xsec, std::make_pair(stack, legend), eff, pur, syst1D);

@@ -254,7 +254,7 @@ class Plotter
     for(size_t j = 0; j < histos[0]->ybins.size()-1; j++){
       std::vector<Histo1D*> histos_1D;
       for(size_t i = 0; i < histos.size(); i++){
-        histos_1D.push_back(histos[i]->Slice(j));
+        histos_1D.push_back(histos[i]->Slice(j, config->plot_xsec));
         histos_1D[i]->xsec_hist->SetFillStyle(config->fsty[i]);
         histos_1D[i]->xsec_hist->SetLineStyle(config->lsty[i]);
       }
@@ -686,7 +686,14 @@ class Plotter
   }
 
   // Plot systematic matrices where appropriate
-  void PlotResponse(TH2D* response){
+  void PlotResponse(TH2D* resp){
+
+    TH2D* response = (TH2D*)resp->Clone();
+    for(int i = 0; i <= response->GetNbinsX()+1; i++){
+      for(int j = 0; j <= response->GetNbinsY()+1; j++){
+        if(response->GetBinContent(i, j)==0) response->SetBinContent(i, j, 0.0001);
+      }
+    }
 
     TString name = response->GetName();
     TCanvas *canvas = new TCanvas(name, "", 900, 900);

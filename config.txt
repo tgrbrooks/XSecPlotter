@@ -14,13 +14,13 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_v3rwt_small.root, Trees/xsectree_v2rwt.root
+InputFile: Trees/xsectree_v2rwt.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv3_, GENIEv2_
+TuneName: GENIEv2_
 
 // Name of output file (.root for modifiable canvas)
-OutputFile: temp/v3v2xsec.png
+OutputFile: temp/2Dxsecv2.png
 
 //------------------------------------------------------------------------
 //          Select neutrino interaction (commas for multiple)
@@ -35,7 +35,7 @@ IsCC: 1
 ContainedLepton: true, false
 
 // Require secondary particles to be contained
-ContainedParticles: true
+ContainedParticles: true, false
 
 // Apply a fiducial volume cut to the neutrino vertex (-1 for AV)
 // Cuts +ve values from face: min x, min y, min z, max x, max y, max z(, CPA cut, APA cut)
@@ -65,7 +65,7 @@ InteractionType: -1
 //- true (selection and kinematic variables all in truth)
 //- smeareff (Applies efficiency and smears plotting variables only)
 //- reco (Efficiency + smearing + PID + selection) TODO: only for numuCC
-Stage: true
+Stage: reco
 
 // Variable to plot in
 // Bools
@@ -92,10 +92,10 @@ Stage: true
 //- delta_alphat (transverse kinematic variable) [rad]
 //- delta_phit (transverse kinematic variable) [rad]
 
-PlotVariable: cos_lep_theta
+PlotVariable: cos_lep_theta, lep_mom
 
 // Save the plots for each variable
-PlotSlices: true
+PlotSlices: false
 
 // Scale to a certain POT (-1 for no scaling) (6.6e20 is nominal)
 PotScale: 6.6e20
@@ -110,16 +110,16 @@ PlotStacked: false
 StackBy: int
 
 // Minimum bin (-1 for min tree value)
-MinValue: -1
+MinValue: -1, 0
 
 // Maximum bin (-1 for max tree value)
-MaxValue: 1
+MaxValue: 1, 2
 
 // Number of bins (-1 for automatic)
-NumBins: -1
+NumBins: 25, 20
 
 // Bin edges (separate edges with , and plot variables in [] brackets)
-BinEdges: [−1.00, −0.50, 0.00, 0.27, 0.45, 0.62, 0.76, 0.86, 0.94, 1.00]
+BinEdges: [-1], [-1]
 
 // Maximum percentage error per bin (0->1, -1 for none) (merges bins)
 MaxError: 0.01
@@ -143,7 +143,7 @@ ShowErrorBand: true
 ShowStatError: true
 
 // Show systematic error (true)
-ShowSystError: false
+ShowSystError: true
 
 // List of systematics to include (genie, flux, detector, background, constant)
 Systematics: genie, flux, detector, background, constant
@@ -158,10 +158,10 @@ ShowErrorBars: true
 PlotCorrelation: true
 
 // Plot all of the different universes for systematic uncertainties
-PlotUniverses: false
+PlotUniverses: true
 
 // Produce efficiency and purity plots (true)
 PlotEffPur: false
 
 // Produce response matrix (true)
-PlotResponse: false
+PlotResponse: true

@@ -221,12 +221,12 @@ void XSecPlotter(){
     std::vector<Histo2D*> histos_2D;
     for(size_t file_i = 0; file_i < histmans.size(); file_i++){
       histos_2D.push_back(histmans[file_i]->GetHisto2D(0, 1));
+      // Plot the 2D histogram
+      plotter->Plot2DHisto(histmans[file_i]->GetHisto2D(0, 1), 0, 1, file_i);
     }
 
-    // Plot the 2D histogram
-    plotter->Plot2DHisto(histmans[0]->GetHisto2D(0, 1), 0, 1);
     // Plot the binning
-    plotter->Plot2DHisto(histmans[0]->GetHisto2D(0, 1), 0, 1, true);
+    plotter->Plot2DHisto(histmans[0]->GetHisto2D(0, 1), 0, 1, 0, true);
 
     // If selected, plot all of the slices
     if(config->plot_slices){

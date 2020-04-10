@@ -264,9 +264,11 @@ class Plotter
   }
 
   // Plot 2D histogram with correct axis labels
-  void Plot2DHisto(Histo2D* histo, size_t var_i, size_t var_j, bool bins=false){
+  void Plot2DHisto(Histo2D* histo, size_t var_i, size_t var_j, int file_i, bool bins=false){
 
-    TString name = config->plot_variables[var_i]+"_"+config->plot_variables[var_j]+"2D";
+    TString tune = "";
+    if(config->tune_name.size() > 1) tune = config->tune_name[file_i];
+    TString name = tune+config->plot_variables[var_i]+"_"+config->plot_variables[var_j]+"_2D";
     if(bins) name = name + "_bins";
 
     TString xaxis = titles->names[var_i]+" ["+titles->units[var_i]+"]";

@@ -254,7 +254,9 @@ class Plotter
     for(size_t j = 0; j < histos[0]->ybins.size()-1; j++){
       std::vector<Histo1D*> histos_1D;
       for(size_t i = 0; i < histos.size(); i++){
-        histos_1D.push_back(histos[i]->Slice(j));
+        histos_1D.push_back(histos[i]->Slice(j, config->plot_xsec));
+        histos_1D[i]->xsec_hist->SetFillStyle(config->fsty[i]);
+        histos_1D[i]->xsec_hist->SetLineStyle(config->lsty[i]);
       }
       // Make all relevant plots
       All1DPlots(histos_1D, var_i, var_j);
@@ -262,9 +264,11 @@ class Plotter
   }
 
   // Plot 2D histogram with correct axis labels
-  void Plot2DHisto(Histo2D* histo, size_t var_i, size_t var_j, bool bins=false){
+  void Plot2DHisto(Histo2D* histo, size_t var_i, size_t var_j, int file_i, bool bins=false){
 
-    TString name = config->plot_variables[var_i]+"_"+config->plot_variables[var_j]+"2D";
+    TString tune = "";
+    if(config->tune_name.size() > 1) tune = config->tune_name[file_i];
+    TString name = tune+config->plot_variables[var_i]+"_"+config->plot_variables[var_j]+"_2D";
     if(bins) name = name + "_bins";
 
     TString xaxis = titles->names[var_i]+" ["+titles->units[var_i]+"]";
@@ -273,12 +277,12 @@ class Plotter
     TString yaxis = titles->names[var_j]+" ["+titles->units[var_j]+"]";
     if(titles->units[var_j]=="") yaxis = titles->names[var_j];
 
-    TCanvas *canvas = new TCanvas(name, "", 900, 600);
+    TCanvas *canvas = new TCanvas(name, "", 900, 900);
     canvas->SetFrameLineWidth(4.);
     canvas->SetLineWidth(4.);
     canvas->SetTickx();
     canvas->SetTicky();
-    canvas->SetMargin(0.16, 0.16, 0.16, 0.12);
+    canvas->SetMargin(0.16, 0.16, 0.16, 0.16);
 
     // Scale by width because this doesn't work with TH2Poly
     TH2Poly* hist = (TH2Poly*)histo->total_hist->Clone();
@@ -289,7 +293,8 @@ class Plotter
       double width = wy*wx;
       int j = bin->GetBinNumber();
       if(config->plot_xsec){
-        hist->SetBinContent(j, histo->xsec_hist->GetBinContent(j)/width);
+        //hist->SetBinContent(j, histo->xsec_hist->GetBinContent(j)/width);
+        hist->SetBinContent(j, histo->xsec_hist->GetBinContent(j));
       }
       else{
         hist->SetBinContent(j, histo->total_hist->GetBinContent(j)/width);
@@ -297,7 +302,7 @@ class Plotter
       if(bins) hist->SetBinContent(j, j);
     }
 
-    hist->SetMarkerSize(1.5);
+    hist->SetMarkerSize(1.1);
     gStyle->SetPaintTextFormat("2.0f");
     hist->GetXaxis()->SetTitle(xaxis);
     hist->GetYaxis()->SetTitle(yaxis);
@@ -307,10 +312,16 @@ class Plotter
     hist->GetXaxis()->SetTitleSize(1.1 * 0.06);
     hist->GetXaxis()->SetNdivisions(108);
     // Y axis config
-    hist->GetYaxis()->SetTitleOffset(0.95);
+    hist->GetYaxis()->SetTitleOffset(1.15);
     hist->GetYaxis()->SetTickLength(0.015);
     hist->GetYaxis()->SetTitleSize(1.1 * 0.06);
     hist->GetYaxis()->SetNdivisions(108);
+    // Text size
+    hist->GetXaxis()->SetTitleSize(0.05);
+    hist->GetYaxis()->SetTitleSize(0.05);
+    hist->GetXaxis()->SetLabelSize(0.04);
+    hist->GetYaxis()->SetLabelSize(0.04);
+    hist->GetZaxis()->SetLabelSize(0.035);
 
     if(!bins){
       hist->Draw("colz");
@@ -330,12 +341,12 @@ class Plotter
   // Plot a 2D histogram
   void Plot2D(TH2D* hist, TString name, TString xaxis, TString yaxis){
 
-    TCanvas *canvas = new TCanvas(name, "", 900, 600);
+    TCanvas *canvas = new TCanvas(name, "", 900, 900);
     canvas->SetFrameLineWidth(4.);
     canvas->SetLineWidth(4.);
     canvas->SetTickx();
     canvas->SetTicky();
-    canvas->SetMargin(0.16, 0.16, 0.16, 0.12);
+    canvas->SetMargin(0.16, 0.16, 0.16, 0.16);
 
     hist->GetXaxis()->SetTitle(xaxis);
     hist->GetYaxis()->SetTitle(yaxis);
@@ -345,10 +356,16 @@ class Plotter
     hist->GetXaxis()->SetTitleSize(1.1 * 0.06);
     hist->GetXaxis()->SetNdivisions(108);
     // Y axis config
-    hist->GetYaxis()->SetTitleOffset(0.95);
+    hist->GetYaxis()->SetTitleOffset(1.15);
     hist->GetYaxis()->SetTickLength(0.015);
     hist->GetYaxis()->SetTitleSize(1.1 * 0.06);
     hist->GetYaxis()->SetNdivisions(108);
+    // Text size
+    hist->GetXaxis()->SetTitleSize(0.05);
+    hist->GetYaxis()->SetTitleSize(0.05);
+    hist->GetXaxis()->SetLabelSize(0.04);
+    hist->GetYaxis()->SetLabelSize(0.04);
+    hist->GetZaxis()->SetLabelSize(0.035);
 
     hist->Draw("colz");
 
@@ -448,6 +465,7 @@ class Plotter
       }
 
       // Set the errors if showing
+      if(histos.size() > 1 && file_i > 0) continue;
       if(config->show_error_bars){
         // Add statistical and systematic errors bin by bin
         for(int n = 0; n <= error_hist->GetNbinsX(); n++){
@@ -586,7 +604,7 @@ class Plotter
     // Set axis titles
     TString err_title = "#sigma_{syst} (%)";
     if(config->show_stat_error && config->show_syst_error && systname=="total") err_title = "#sigma_{all} (%)";
-    else if(config->show_stat_error) err_title = "#sigma_{stat} (%)";
+    else if(config->show_stat_error && !config->show_syst_error) err_title = "#sigma_{stat} (%)";
     error_band->GetYaxis()->SetTitle(err_title);
     error_band->GetXaxis()->SetTitle(titles->names[var_i]+" ["+titles->units[var_i]+"]");
     if(titles->units[var_i]=="") error_band->GetXaxis()->SetTitle(titles->names[var_i]);
@@ -670,17 +688,24 @@ class Plotter
   }
 
   // Plot systematic matrices where appropriate
-  void PlotResponse(TH2D* response){
+  void PlotResponse(TH2D* resp){
+
+    TH2D* response = (TH2D*)resp->Clone();
+    for(int i = 0; i <= response->GetNbinsX()+1; i++){
+      for(int j = 0; j <= response->GetNbinsY()+1; j++){
+        if(response->GetBinContent(i, j)==0) response->SetBinContent(i, j, 0.0001);
+      }
+    }
 
     TString name = response->GetName();
-    TCanvas *canvas = new TCanvas(name, "", 900, 600);
+    TCanvas *canvas = new TCanvas(name, "", 900, 900);
     bool show_text = false;
     if(response->GetNbinsX() <= 10 && response->GetNbinsY() <= 10) show_text = true;
     canvas->SetFrameLineWidth(4.);
     canvas->SetLineWidth(4.);
     canvas->SetTickx();
     canvas->SetTicky();
-    canvas->SetMargin(0.16, 0.16, 0.16, 0.12);
+    canvas->SetMargin(0.16, 0.16, 0.16, 0.16);
     if(show_text) canvas->SetRightMargin(0.1);
 
     response->GetXaxis()->SetTitle("True bin i");
@@ -694,10 +719,16 @@ class Plotter
     response->GetXaxis()->SetTitleSize(1.1 * 0.06);
     response->GetXaxis()->CenterLabels();
     response->GetYaxis()->SetNdivisions(110);
-    response->GetYaxis()->SetTitleOffset(0.95);
+    response->GetYaxis()->SetTitleOffset(1.15);
     response->GetYaxis()->SetTickLength(0.015);
     response->GetYaxis()->SetTitleSize(1.1 * 0.06);
     response->GetYaxis()->CenterLabels();
+    // Text size
+    response->GetXaxis()->SetTitleSize(0.05);
+    response->GetYaxis()->SetTitleSize(0.05);
+    response->GetXaxis()->SetLabelSize(0.04);
+    response->GetYaxis()->SetLabelSize(0.04);
+    response->GetZaxis()->SetLabelSize(0.035);
 
     if(show_text) response->Draw("COL TEXT");
     else response->Draw("COLZ");

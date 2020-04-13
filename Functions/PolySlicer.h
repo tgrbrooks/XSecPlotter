@@ -2,7 +2,7 @@
 #define POLYSLICER_H
 
 // Slice 2D poly hist in Y assuming y binning is constant
-TH1D* SlicePoly(TH2Poly* poly, size_t i, TString name, std::vector<double> ybins, std::vector<std::vector<double>> xbins){
+TH1D* SlicePoly(TH2Poly* poly, size_t i, TString name, std::vector<double> ybins, std::vector<std::vector<double>> xbins, bool xsec=false){
 
   // Get the upper and lower y edge that corresponds to slice
   double ylow = ybins[i];
@@ -27,7 +27,7 @@ TH1D* SlicePoly(TH2Poly* poly, size_t i, TString name, std::vector<double> ybins
     }
   }
   // FIXME work out how to scale by xsec
-  hist->Scale(1/width, "width");
+  if(!xsec) hist->Scale(1/width, "width");
   return hist;
 
 

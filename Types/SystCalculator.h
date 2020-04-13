@@ -41,10 +41,10 @@ class SystCalculator
     }
 
     // Calculate the systematics
-    if(calc_genie || calc_flux) GetReweightSysts(calc_genie, calc_flux);
-    if(calc_detector) GetDetectorSysts();
-    if(calc_background) GetBackgroundSysts();
-    if(calc_constant) GetConstantSysts();
+    if(calc_genie || calc_flux){ std::cout<<"Reweighting systematics...\n"; GetReweightSysts(calc_genie, calc_flux); }
+    if(calc_detector){ std::cout<<"Detector systematics...\n"; GetDetectorSysts(); }
+    if(calc_background){ std::cout<<"Background systematics...\n"; GetBackgroundSysts(); }
+    if(calc_constant){ std::cout<<"Constant systematics...\n"; GetConstantSysts(); }
 
     // Calculate the total systematics for each histogram
     // Total
@@ -305,7 +305,7 @@ class SystCalculator
 
       // Loop over the universes
       for(int ns = 0; ns < nsims; ns++){
-        // Apply selection
+        // Apply selection TODO add support for exclusive final states
         if(!sel.IsSelected(nu_pdg[ns], true, lep_contained[ns], particles_contained[ns], -1, -1, -1, -1)) continue;
 
         // Store values in a map
@@ -353,8 +353,6 @@ class SystCalculator
     // Read in data from file
     TFile data_file(config->input_file[file_i], "READ");
 
-    std::cout<<"Creating the tree reader\n";
-
     //Read in TTree
     TTreeReader tree_reader("XSecTree/weight", &data_file);
     TTreeReaderArray<double> genie_weight(tree_reader, "genie_weights");
@@ -363,7 +361,6 @@ class SystCalculator
     // Loop over tree
     int index = 0;
     int data_i = 0;
-    std::cout<<"This takes...\n";
     while (tree_reader.Next()) {
       // Determine if interaction was selected
       if(!dataman->data_used[index]){ index++; continue; }
@@ -405,7 +402,6 @@ class SystCalculator
       index++;
       data_i++;
     }
-    std::cout<<"... Aaages\n";
 
     // Scale universes
     if(calc_genie){

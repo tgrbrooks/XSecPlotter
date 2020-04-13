@@ -14,13 +14,13 @@
 //                           File configuration
 //------------------------------------------------------------------------
 // Name of input file
-InputFile: Trees/xsectree_v3rwt.root, Trees/xsectree_v2rwt.root
+InputFile: Trees/xsectree_v2rwt.root
 
 // Name of model/tune in input file (1 per input file)
-TuneName: GENIEv3_, GENIEv2_
+TuneName: GENIEv2_
 
 // Name of output file (.root for modifiable canvas)
-OutputFile: temp/1Drate.png
+OutputFile: temp/2Dxsecv2.png
 
 //------------------------------------------------------------------------
 //          Select neutrino interaction (commas for multiple)
@@ -35,14 +35,14 @@ IsCC: 1
 ContainedLepton: true, false
 
 // Require secondary particles to be contained
-ContainedParticles: true
+ContainedParticles: true, false
 
 // Apply a fiducial volume cut to the neutrino vertex (-1 for AV)
 // Cuts +ve values from face: min x, min y, min z, max x, max y, max z(, CPA cut, APA cut)
 Fiducial: 10, 10, 15, 10, 20, 50, 5, 2.5
 
 // FSI (true) or true interaction (false)
-PlotByFsi: false
+PlotByFsi: true
 
 //- Determine FSI (ignored if plotting by interaction)
 //- Number of protons (-1 for all)
@@ -92,7 +92,7 @@ Stage: reco
 //- delta_alphat (transverse kinematic variable) [rad]
 //- delta_phit (transverse kinematic variable) [rad]
 
-PlotVariable: lep_mom
+PlotVariable: cos_lep_theta, lep_mom
 
 // Save the plots for each variable
 PlotSlices: false
@@ -110,22 +110,22 @@ PlotStacked: false
 StackBy: int
 
 // Minimum bin (-1 for min tree value)
-MinValue: 0
+MinValue: -1, 0
 
 // Maximum bin (-1 for max tree value)
-MaxValue: 2
+MaxValue: 1, 2
 
 // Number of bins (-1 for automatic)
-NumBins: 20
+NumBins: 25, 20
 
 // Bin edges (separate edges with , and plot variables in [] brackets)
-BinEdges: [-1]
+BinEdges: [-1], [-1]
 
 // Maximum percentage error per bin (0->1, -1 for none) (merges bins)
-MaxError: -1
+MaxError: 0.01
 
 // Plot cross-section (true) or rate (false)
-PlotXSec: false
+PlotXSec: true
 
 // Plot filled histograms (true)
 PlotFilled: false
@@ -146,22 +146,22 @@ ShowStatError: true
 ShowSystError: true
 
 // List of systematics to include (genie, flux, detector, background, constant)
-Systematics: background, constant
+Systematics: genie, flux, detector, background, constant
 
 // Value of constant percentage systematic error (0->1)
-ConstantSyst: 0.1
+ConstantSyst: 0.0224
 
 // Show error bars on histograms (true)
 ShowErrorBars: true
 
 // Produce covariance and correlation matrices for systematic errors (true)
-PlotCorrelation: false
+PlotCorrelation: true
 
 // Plot all of the different universes for systematic uncertainties
-PlotUniverses: false
+PlotUniverses: true
 
 // Produce efficiency and purity plots (true)
 PlotEffPur: false
 
 // Produce response matrix (true)
-PlotResponse: false
+PlotResponse: true

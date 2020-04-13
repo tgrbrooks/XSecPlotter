@@ -41,10 +41,10 @@ class XSecSystCalculator
     }
 
     // Calculate the systematics
-    if(calc_genie || calc_flux) GetReweightSysts(calc_genie, calc_flux);
-    if(calc_detector) GetDetectorSysts();
-    if(calc_background) GetBackgroundSysts();
-    if(calc_constant) GetConstantSysts();
+    if(calc_genie || calc_flux){ std::cout<<"Reweighting systematics...\n"; GetReweightSysts(calc_genie, calc_flux); }
+    if(calc_detector){ std::cout<<"Detector systematics...\n"; GetDetectorSysts(); }
+    if(calc_background){ std::cout<<"Background systematics...\n"; GetBackgroundSysts(); }
+    if(calc_constant){ std::cout<<"Constant systematics...\n"; GetConstantSysts(); }
 
     // Calculate the total systematics for each histogram
     // Total
@@ -302,7 +302,6 @@ class XSecSystCalculator
 
     // Loop over the tree entries
     int index = 0;
-    std::cout<<"Detector systematics\n";
     while (tree_reader.Next()) {
 
       // Apply fiducial volume cut
@@ -355,7 +354,7 @@ class XSecSystCalculator
                 if(val_map[key] != -99999 && val_map[key2] != -99999){
                   int true_bin = histman->histos_2D[k2D]->total_hist->FindBin(true_data_i, true_data_j);
                   int reco_bin = histman->histos_2D[k2D]->total_hist->FindBin(val_map[key], val_map[key2]);
-                  histman->histos_2D[k2D]->systematics->detector->xsecuni[ns]->migration->Fill(true_bin-0.5, reco_bin-0.5);
+                  histman->histos_2D[k2D]->systematics->detector->xsecuni[ns]->migration->Fill(true_bin+0.5, reco_bin+0.5);
                 }
               }
               if(sel){
@@ -403,7 +402,6 @@ class XSecSystCalculator
     
     // Loop over tree
     int index = 0;
-    std::cout<<"Reweighting systematics\n";
     while (tree_reader.Next()) {
       if(!dataman->interactions[index].in_fv){ index++; continue; }
 

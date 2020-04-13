@@ -18,6 +18,7 @@
 #include <TF1.h>
 #include <TH1F.h>
 #include <TH1D.h>
+#include <TGraph.h>
 #include <TH2D.h>
 #include <TH2Poly.h>
 #include <TH3D.h>
@@ -452,8 +453,8 @@ void Variables(){
       }
       // Stat errors
       double serror = pow(hists[i]->GetBinError(j), 2.);
-      //cov->SetBinContent(j, j, perror+serror);
-      cov->SetBinContent(j, j, serror);
+      cov->SetBinContent(j, j, perror+serror);
+      //cov->SetBinContent(j, j, serror);
     }
     // Genie and flux reweighting systematics
     std::vector<TH1D*> genie_v;
@@ -490,13 +491,13 @@ void Variables(){
     for(size_t j = 1; j <= nbins; j++){
       // Percent errors
       double perror = pow(mc_hists_2D[i]->GetBinContent(j)*(0.02+0.01+0.01),2.);
-      if(vars[i]!="mom" && vars[i]!="theta"){
+      if(vars[ind_2D[i].first]!="mom" && vars[ind_2D[i].second]!="theta"){
         perror = pow(mc_hists_2D[i]->GetBinContent(j)*(0.02+0.01+0.01+0.01),2.);
       }
       // Stat errors
       double serror = pow(hists_2D[i]->GetBinError(j), 2.);
-      //cov->SetBinContent(j, j, perror+serror);
-      cov->SetBinContent(j, j, serror);
+      cov->SetBinContent(j, j, perror+serror);
+      //cov->SetBinContent(j, j, serror);
     }
     // Genie and flux reweighting systematics
     std::vector<TH2Poly*> genie_v;
@@ -521,7 +522,7 @@ void Variables(){
     det_2D.push_back(det_v);
     covariances_2D.push_back(cov);
   }
-/*
+
   // Get the reweighting from file
   TTreeReader weight_reader("XSecTree/weight", &mc_file);
   TTreeReaderArray<double> gw(weight_reader, "genie_weights");
@@ -553,7 +554,7 @@ void Variables(){
   }
   
   // Get the detector variations from file
-  TTreeReader det_reader("XSecTree/detsys", &mc_file);
+  TTreeReader det_reader("XSecTree/detsyst", &mc_file);
   TTreeReaderValue<double> ds_vtx_x(det_reader, "ds_vtx_x");
   TTreeReaderValue<double> ds_vtx_y(det_reader, "ds_vtx_y");
   TTreeReaderValue<double> ds_vtx_z(det_reader, "ds_vtx_z");
@@ -629,13 +630,15 @@ void Variables(){
     covariances_2D[i]->Add(det_cov);
     delete det_cov;
   }
-*/
+
   // Calculate chi2 between data and MC for each histogram
   std::vector<double> chis;
   for(size_t i = 0; i < hists.size(); i++){
     double chi = ChiSquare(hists[i], mc_hists[i], covariances[i]);
-    chis.push_back(chi);
-    std::cout<<"var = "<<vars[i]<<" chi = "<<chi<<"\n";
+    double ndof = hists[i]->GetNbinsX() - 1;
+    double pvalue = TMath::Prob(chi, ndof);
+    chis.push_back(pvalue);
+    std::cout<<"var = "<<vars[i]<<" chi = "<<chi<<" ndof = "<<ndof<<" p-value = "<<pvalue<<"\n";
 
     // Plot all the histogram variations
     TCanvas *c1 = new TCanvas(Form("canvas%i", (int)i), "", 900, 600);
@@ -673,8 +676,10 @@ void Variables(){
   std::vector<double> chis_2D;
   for(size_t i = 0; i < hists_2D.size(); i++){
     double chi = ChiSquare2D(hists_2D[i], mc_hists_2D[i], covariances_2D[i]);
-    chis_2D.push_back(chi);
-    std::cout<<"var1 = "<<vars[ind_2D[i].first]<<" var2 = "<<vars[ind_2D[i].second]<<" chi = "<<chi<<"\n";
+    double ndof = hists_2D[i]->GetNumberOfBins() - 1;
+    double pvalue = TMath::Prob(chi, ndof);
+    chis_2D.push_back(pvalue);
+    std::cout<<"var1 = "<<vars[ind_2D[i].first]<<" var2 = "<<vars[ind_2D[i].second]<<" chi = "<<chi<<" ndof = "<<ndof<<" p-value = "<<pvalue<<"\n";
 
     // Plot all the histogram variations
     TCanvas *c1 = new TCanvas(Form("canvas%i", (int)(i+1)*10), "", 900, 600);

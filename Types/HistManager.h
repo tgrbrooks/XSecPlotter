@@ -269,7 +269,7 @@ class HistManager
           if(data_i != -99999 && data_j != -99999){
             int true_bin = histos_2D[k2D]->total_hist->FindBin(true_data_i, true_data_j);
             int reco_bin = histos_2D[k2D]->total_hist->FindBin(data_i, data_j);
-            histos_2D[k2D]->systematics->GetSyst(syst)->xsecuni[uni]->migration->Fill(true_bin-0.5, reco_bin-0.5);
+            histos_2D[k2D]->systematics->GetSyst(syst)->xsecuni[uni]->migration->Fill(true_bin+0.5, reco_bin+0.5);
           }
         }
         if(sel){
@@ -356,8 +356,6 @@ class HistManager
     for(int n = 0; n <= histos_2D[key]->bkg_hist->GetNumberOfBins(); n++){
       histos_2D[key]->bkg_hist->SetBinContent(n, histos_2D[key]->bkg_hist->GetBinContent(n)*config->pot_scale_fac[file_i]);
     }
-    // If plotting cross section convert from rate
-    histos_2D[key]->bkg_hist->Scale(1, "width");
 
   }
 
@@ -487,7 +485,7 @@ class HistManager
       int true_bin = hist->FindBin(in.true_variables[var_i], in.true_variables[var_j]);
       int reco_bin = hist->FindBin(in.variables[var_i], in.variables[var_j]);
       if(in.true_selected && in.variables[var_i] != -99999 && in.variables[var_j] != -99999){
-        response->Fill(true_bin-0.5, reco_bin-0.5);
+        response->Fill(true_bin+0.5, reco_bin+0.5);
       }
     }
 
@@ -504,7 +502,8 @@ class HistManager
       for(int bin_i = 1; bin_i <= nbins; bin_i++){
         histos_2D[key]->response->SetBinContent(bin_j, bin_i, (double)response->GetBinContent(bin_j, bin_i)/total);
         if(response->GetBinContent(bin_j, bin_i)==0){
-          histos_2D[key]->response->SetBinContent(bin_j, bin_i, 0.000001);
+          //histos_2D[key]->response->SetBinContent(bin_j, bin_i, 0.000001);
+          histos_2D[key]->response->SetBinContent(bin_j, bin_i, 0);
         } 
       }   
     } 
@@ -551,7 +550,9 @@ class HistManager
   // Calculate the 2D cross section
   void SetXSec(int var_i, int var_j){
     std::pair<TString, TString> key = std::make_pair(config->plot_variables[var_i], config->plot_variables[var_j]);
-    histos_2D[key]->xsec_hist = xsec->ToXSec(histos_2D[key]);
+    std::pair<TH2Poly*, TH2Poly*> xsec_conv = xsec->ToXSec(histos_2D[key]);
+    histos_2D[key]->xsec_hist = xsec_conv.first;
+    histos_2D[key]->xsec_err = xsec_conv.second;
 
     // Do a little formatting
     histos_2D[key]->xsec_hist->SetFillColor(config->cols[0]);
@@ -659,7 +660,7 @@ class HistManager
     // If plotting cross section convert from rate
     total_hist->Scale(1, "width");
     total_hist->SetLineColor(config->cols[0]);
-    if(config->plot_variables.size() > 1) total_hist->SetLineStyle(config->lsty[file_i]);
+    if(config->input_file.size() > 1) total_hist->SetLineStyle(config->lsty[file_i]);
     return total_hist;
   }
 
@@ -763,8 +764,6 @@ class HistManager
     for(int i = 0; i <= total_hist->GetNumberOfBins(); i++){
       total_hist->SetBinContent(i, total_hist->GetBinContent(i)*config->pot_scale_fac[file_i]);
     }
-    // If plotting cross section convert from rate
-    total_hist->Scale(1, "width");
     total_hist->SetLineColor(config->cols[0]);
     if(config->plot_variables.size() > 1) total_hist->SetLineStyle(config->lsty[file_i]);
     return total_hist;

@@ -38,34 +38,34 @@ The configuration options are briefly described in the `config.txt` file.
 The main features of the configuration are:
 * Plot multiple cross section predictions by specifying more than one `InputFile`
 * Select neutrino interaction topologies
-** Neutrino flavour
-** Charged current or neutral current interactions
-** Select by final state topology or true interaction mode
-** Define a fiducial volume
-** Select based on particle containment
+  ** Neutrino flavour
+  ** Charged current or neutral current interactions
+  ** Select by final state topology or true interaction mode
+  ** Define a fiducial volume
+  ** Select based on particle containment
 * Choose which stage of reconstruction to plot with `Stage`
-** Truth level information
-** Particle reconstruction efficiencies
-** Kinematic variable smearing
-** Reconstructed selection (parametrised based on full SBND simulations) (only for numuCC)
+  ** Truth level information
+  ** Particle reconstruction efficiencies
+  ** Kinematic variable smearing
+  ** Reconstructed selection (parametrised based on full SBND simulations) (only for numuCC)
 * Choose the kinematic variable to produce differential cross sections in (supports up to 2)
 * Scale to desired protons on target (POT)
 * Plot rate or cross section predictions
 * Histogram binning options
-** Set ranges for each parameter
-** Set number of bins or provide bin edges
-** Define a maximum statistical error per bin for automatic rebinning
+  ** Set ranges for each parameter
+  ** Set number of bins or provide bin edges
+  ** Define a maximum statistical error per bin for automatic rebinning
 * Histogram style options
-** Stack histograms by true FSI, interaction type or neutrino type
-** Show error bars on the histogram or as a percentage error band below the histogram
+  ** Stack histograms by true FSI, interaction type or neutrino type
+  ** Show error bars on the histogram or as a percentage error band below the histogram
 * Statistical analysis
-** Calculate cross section, flux, detector, external background, and constant systematic uncertainties on both rate predictions and expected cross section measurements.
-** Handle statistical uncertainty scaling with POT.
-** Calculate goodness-of-fit between models using chi2 statistical test for correlated uncertainties.
+  ** Calculate cross section, flux, detector, external background, and constant systematic uncertainties on both rate predictions and expected cross section measurements.
+  ** Handle statistical uncertainty scaling with POT.
+  ** Calculate goodness-of-fit between models using chi2 statistical test for correlated uncertainties.
 * Plotting options
-** Plot rate and cross section predictions
-** Plot 1D slices of 2D histograms
-** Plot systematic universe variations
-** Plot covariance and correlation matrices
-** Plot selection efficiency and purity graphs
-** Plot response matrices
+  ** Plot rate and cross section predictions
+  ** Plot 1D slices of 2D histograms
+  ** Plot systematic universe variations
+  ** Plot covariance and correlation matrices
+  ** Plot selection efficiency and purity graphs
+  ** Plot response matrices

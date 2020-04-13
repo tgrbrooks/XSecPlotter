@@ -178,7 +178,8 @@ class ChiSquare
       for(int b = 1; b <= nbins; b++){
         // Generate Poisson distributed random number for bin with mean as mc value
         double mean = mc->total_hist->GetBinContent(b);
-        double rand = randgen->Poisson(mean);
+        //double rand = randgen->Poisson(mean);
+        double rand = randgen->Gaus(mean, mc->systematics->total->mean_syst->GetBinError(b));
         // TODO if looking at cross section is random variable a gaussian? what's the standard deviation? stat or syst?
         // Fill histogram for each universe
         uni->SetBinContent(b, rand);
